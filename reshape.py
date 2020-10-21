@@ -1,4 +1,4 @@
-##Deal with a SLK column as metres in integers to avoid the issue of calculating on floating numbers
+##Deal with an SLK column as metres in integers to avoid the issue of calculating on floating numbers
 def asmetres(var):
 
     m = round(var*1000).astype(int) 
@@ -28,7 +28,7 @@ def stretch(data, start, end, true_start, true_end, obs_length = 10, dropvars = 
     new_data = new_data.reset_index(drop = True) 
     
     #Drop the variables no longer required
-    for var in (dropvars + [start, end, true_start, true_start]):
+    for var in (dropvars + [start, end, true_start, true_end]):
         new_data.drop([var], axis = 1, inplace = True)
     new_data = new_data.reset_index(drop = True)
     
@@ -60,16 +60,16 @@ def fuse(datasets = [], ignore = None, join = 'inner'):
     return new_data
 
 ##Function that Compact 10m data so that it has 'from' and 'to' SLK columns 
-def compact(data, SLK = "SLK", true_SLK = "TRUE_SLK", obs_length = 10, idvars = [], group_by = []):
+def compact(data, SLK = "SLK", true_SLK = "TRUE_SLK", obs_length = 10, idvars = [], grouping = []):
 
     import numpy as np
 
-    #Sort by all columns in group_by, then by true SLK, then by SLK
+    #Sort by all columns in grouping, then by true SLK, then by SLK
     new_data = data.copy().sort_values(idvars + [SLK]).reset_index(drop = True)
 
-    #Create a column that is a concatenation of all the columns in the group_by
+    #Create a column that is a concatenation of all the columns in the grouping
     new_data.insert(0, "groupkey", "")
-    for var in group_by + idvars:
+    for var in grouping+idvars:
         new_data["groupkey"] += new_data[var].astype(str) + '-'
 
     #Convert SLK and true_SLK columns into integers of metres to avoid the problems caused by calculations on floating numbers
@@ -95,7 +95,7 @@ def compact(data, SLK = "SLK", true_SLK = "TRUE_SLK", obs_length = 10, idvars = 
 
     #Create the compact dataset
 
-    compact_data = new_data.copy()[start][idvars + group_by].reset_index(drop = True) #Data for the id and grouping variables for every start instance. 
+    compact_data = new_data.copy()[start][idvars + grouping].reset_index(drop = True) #Data for the id and grouping variables for every start instance. 
     compact_data.insert(2, "START_SLK", new_data[start].reset_index(drop = True)[SLK]) 
     compact_data.insert(4, "START_TRUE", new_data[start].reset_index(drop = True)[true_SLK])
     #As each start instance has a corresponding end instance with shared grouping and id variables, it can be joined horizontally.
