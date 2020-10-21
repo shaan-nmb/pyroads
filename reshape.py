@@ -18,8 +18,8 @@ def stretch(data, start, end, true_start, true_end, obs_length = 10, dropvars = 
 
     #Reshape the data into size specified in 'obs_length'
     new_data = new_data.reindex(new_data.index.repeat(new_data[end]/obs_length - new_data[start]/obs_length)) #reindex by the number of intervals of specified length between the start and the end.
-    new_data['SLK'] = new_data[start] + new_data.group_by(level=0).cumcount()*obs_length #Create SLK point column based on start plus the cumulative count of how many intervals away it is multiplied by the specified observation length. 
-    new_data['TRUE_SLK'] = new_data[true_start] + new_data.group_by(level=0).cumcount()*obs_length #Create SLK point column based on start plus the cumulative count of how many intervals away it is multiplied by the specified observation length.
+    new_data['SLK'] = new_data[start] + new_data.groupby(level=0).cumcount()*obs_length #Create SLK point column based on start plus the cumulative count of how many intervals away it is multiplied by the specified observation length. 
+    new_data['TRUE_SLK'] = new_data[true_start] + new_data.groupby(level=0).cumcount()*obs_length #Create SLK point column based on start plus the cumulative count of how many intervals away it is multiplied by the specified observation length.
     
     #Convert metre references back to kilometres
     new_data['SLK'] = new_data['SLK']/1000
