@@ -10,7 +10,7 @@ def rurality(data, RA, road_no, SLK = "SLK") :
     return regionType
 
 ##Assign a natural key based on key variables
-def naturalKey(data, SLK = 'SLK', trueSLK = 'TRUE_SLK', keyVars = []):
+def natural_key(data, SLK = 'SLK', trueSLK = 'TRUE_SLK', keyVars = []):
 
     #Create a natural key based on SLK and ID variables
     newData = data.copy()
@@ -22,7 +22,7 @@ def naturalKey(data, SLK = 'SLK', trueSLK = 'TRUE_SLK', keyVars = []):
     return newData
 
 ##Function that allows one to add columns to a dataset from one with a shared natural key.  
-def concatCols(left, right, NaturalKey = "NATURAL_KEY", newCols = []):
+def concat_cols(left, right, NaturalKey = "NATURAL_KEY", newCols = []):
     newCols.append(NaturalKey)
     concatData = left.merge(right[newCols], how = 'left', on = NaturalKey, suffixes = ('','_right'))
     return concatData

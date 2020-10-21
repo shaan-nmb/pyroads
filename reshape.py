@@ -28,8 +28,8 @@ def stretch(data, start, end, trueStart, trueEnd, obsLength = 10, dropVars = [])
     newData = newData.reset_index(drop = True) 
     
     #Drop variables no longer required
-    for var in dropVars:
-        newData.drop([var + [start, end, trueStart, trueEnd]], axis = 1, inplace = True)
+    for var in dropVars + [start, end, trueStart, trueEnd]:
+        newData.drop([var], axis = 1, inplace = True)
     newData = newData.reset_index(drop = True)
     
     return newData
