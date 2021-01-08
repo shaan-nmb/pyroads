@@ -34,9 +34,9 @@ regionDict = {1:'Great Southern',2:'South West',5:'Goldfields-Esperance',6:'Kimb
 SULA_Agg_Dict ={1:4,2:6,3:10,4:14,5:16,6:14,7:16,8:10,9:14,10:14,11:10,12:20}
 
 
+POARdict = {1:"Sandy Clay", 2:"Gravel",3:"Crushed Rock",4:"Sand",5:"Clay",6:"Concrete",7:"Limestone",8:"Recycled Material",9: "Hydrated Cement Treated Crushed Rock Base",10:"Asphalt",11:"Ferricrete",99:"Unknown"}
 
-
-
+surfDict = {1:"Asphalt Dense Graded",2:"Asphalt Intersection Mix",3:"Asphalt Open Graded",4:"Concrete",5:"Paving",6:"Primer Seal",7:"Rubberised Seal",8:"Single Seal",9:"Slurry Seal",10:"Two Coat Seal",11:"Asphalt Stone Mastic",12:"Asphalt Open Graded on Dense Graded"}
 
 ##Deal with an SLK column as metres in integers to avoid the issue of calculating on floating numbers
 def asmetres(var):
@@ -143,7 +143,11 @@ if __name__ =="__main__":
             #set Third condition
             df.loc[(df['Agg_Size'].isnull()) & (df['Unsealed'].isnull()) , 'Agg_Size'] = df['Surf_Type'].map(surfDict)
             
-
+            # Base Material Map descriptions
+            df['Base_Material'] = df['Orig_Base_Mat'].map(POARdict)
+            
+            # Surface type Map descriptions
+            df['Surface_Type'] = df['Surf_Type'].map(surfDict)
            
             
             # Expand the Data
