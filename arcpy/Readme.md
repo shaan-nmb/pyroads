@@ -8,5 +8,5 @@ Both this scripts can be used a a future date to update network shapefiles.
 GeocodeSLK_Conditions_Tool.py scipt is used within the geocodeSLK Arcmap tooolbox, to batch process
 csv files as an MakeRouteEvent layer, and write as feature class to a selected geodatabase.
 
-The GeocodeSLK_Conditions.py is a standalone verion of the above script to be run outside of Arcmap.
+The GeocodeSLK_Conditions.py is a standalone verison of the above script to be run outside of Arcmap.
 
