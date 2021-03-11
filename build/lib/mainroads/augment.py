@@ -10,21 +10,21 @@ def rurality(data, RA, road_no, SLK = "SLK") :
     return regionType
 
 ##Assign a natural key based on key variables
-def natural_key(data, SLK = None, ID_name = "NATURAL_KEY", true_SLK = None, key_vars = []):
+def natural_key(data, SLK = 'SLK', true_SLK = 'TRUE_SLK', key_vars = []):
 
     #Create a natural key based on SLK and ID variables
     new_data = data.copy()
-    new_data.insert(0, ID_name, "")
-    for var in key_vars +[SLK, true_SLK]:
-        if var is not None:
-            new_data[ID_name] += new_data[var].astype(str) + '-'
+    new_data.insert(0, "NATURAL_KEY", "")
+    for var in key_vars:
+        new_data["NATURAL_KEY"] += new_data[var].astype(str) + '-'
+    new_data["NATURAL_KEY"] = new_data["NATURAL_KEY"] + new_data[SLK].astype(str) + '-' + new_data[true_SLK].astype(str)   
 
     return new_data
 
 ##Function that allows one to add columns to a dataset from one with a shared natural key.  
-def concat_cols(left, right, key = "NATURAL_KEY", new_cols = []):
-    new_cols.append(key)
-    concat_data = left.copy().merge(right[new_cols], how = 'left', on = key, suffixes = ('','_right'))
+def concat_cols(left, right, naturalkey = "NATURAL_KEY", new_cols = []):
+    new_cols.append(naturalkey)
+    concat_data = left.merge(right[new_cols], how = 'left', on = naturalkey, suffixes = ('','_right'))
     return concat_data
 
 ###Find points of equation and add the information to the dataset
