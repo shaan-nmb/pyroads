@@ -59,13 +59,13 @@ def stretch(data, starts, ends, prefixes = ['', 'true_'], segment_size = 'GCD', 
 
     return new_data
 
-def compact(data, true_SLK = None, SLK = None, obs_length = 10, idvars = [], grouping = []):
+def compact(data, true_SLK = None, lanes = [], SLK = None, obs_length = 10, idvars = [], grouping = []):
     
     SLKs = [SLK for SLK in [true_SLK, SLK] if SLK is not None]
     
     import numpy as np
     #Sort by all columns in grouping, then by true SLK, then by SLK
-    new_data = data.copy().sort_values(idvars + SLKs).reset_index(drop = True)
+    new_data = data.copy().sort_values(idvars + SLKs + lanes).reset_index(drop = True)
 
     #Create a column that is a concatenation of all the columns in the grouping
     new_data.insert(0, "groupkey", "")
