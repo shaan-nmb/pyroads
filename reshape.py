@@ -21,13 +21,17 @@ def gcd_list(items):
     return result
 
 ##Turn each observation into sections of specified lengths
-def stretch(data, starts, ends, prefixes = ['', 'true_'], segment_size = 'GCD', keep_ranges = False):
+def stretch(data, starts, ends, prefixes = ['', 'true_'], segment_size = 'GCD', keep_ranges = False, sort = None):
 
     import numpy as np
+ 
 
     SLKs = [SLK for SLK in starts + ends]
     new_data = data.copy() #Copy of the dataset
     new_data = new_data.dropna(thresh = 2)  #drop any row that does not contain at least two non-missing values.
+    
+    if type(sort) == list:
+        new_data.sort_values(sort, inplace = True)
 
     #Change SLK variables to 32 bit integers of metres to avoid the issue with calculations on floating numbers
     new_data[SLKs] = new_data[SLKs].apply(asmetres)
