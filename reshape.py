@@ -103,7 +103,7 @@ def compact(data, true_SLK = None, lanes = [], SLK = None, obs_length = 10, idva
         compact_data.insert(len(idvars), "START_" + var, (new_data[start].reset_index(drop = True)[var])/1000)
         compact_data.insert(len(idvars)+1, "END_" + var, (new_data[end].reset_index(drop = True)[var] + obs_length)/1000)  
     
-    compact_data = compact_data.sort_values(idvars).reset_index(drop = True) #Sort data by the location varibles
+    compact_data = compact_data.sort_values(idvars + SLKs + lanes).reset_index(drop = True) #Sort data by the location varibles
     
     #Drop the point variables
 
