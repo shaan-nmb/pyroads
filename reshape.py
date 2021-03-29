@@ -239,9 +239,9 @@ def cway_to_dirn(data, name = None):
         names = [col for col in data.columns if "cway" in col.lower()]
         if len(names) != 1:
             if len(names) == 0:
-                return 'Please specify the name of the carriageway column.'
+                return 'ERROR cway_to_dirn(name): Please specify the name of the carriageway column.'
             else:
-                return print('Please specify the name of the carriageway column.',  'Found:', names)
+                return print('ERROR cway_to_dirn(name): Please specify the name of the carriageway column.',  'Found:', names)
         else:
             name = names[0]
     data_right = data[data[name].isin(['s', 'r', 'S', 'R'])].copy()
@@ -271,9 +271,9 @@ def lane_to_dirn(data, name = None, dirn_name = 'DIRN'):
         names = [col for col in data.columns if "xsp" in col.lower() or "lane" in col.lower()]
         if len(names) != 1:
             if len(names) == 0:
-                return 'Please specify the name of the `lane` column.'
+                return 'ERROR lane_to_dirn(name = None): Please specify the name of the `lane` column.'
             else:
-                return print('Please specify the name of the `lane` column.',  'Found:', names)
+                return print('ERROR lane_to_dirn(name = None): Please specify the name of the `lane` column.',  'Found:', names)
         else:
             name = names[0]            
     new_data.loc[:, dirn_name] = np.where(data[name].str.contains("^L"), 'L', 'R')

@@ -48,7 +48,7 @@ def surf_type(data, old_col, new_col = 'surface_type', method = "short"):
     elif method == "grouped":
         surf_dict = dict(zip(surf_no, grouped))
     else:
-        return print("Please choose a method from ['full', 'short', 'asphalt', grouped'].")
+        return print("ERROR surf_type(method): Please choose a method from ['full', 'short', 'asphalt', grouped'].")
     
     data[new_col] = data[old_col].map(surf_dict)
     return data[new_col]
@@ -65,7 +65,7 @@ def ra_transform(a, method = "name"):
     if method == "number":
         ra_dict = dict(zip(number, name))
 
-    ra = data.map(ra_dict).astype(pd.Int64Dtype())
+    ra = a.map(ra_dict).astype(pd.Int64Dtype())
     
     return ra
 
@@ -78,7 +78,7 @@ def route_change(a, method = "new"):
     if method == "old": 
         route_dict = dict(zip(new_routes, old_routes))
     
-    route_no = data.map(route_dict) 
+    route_no = a.map(route_dict) 
     return route_no
     
 def route_description(a, method = "new"):
