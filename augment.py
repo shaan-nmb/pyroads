@@ -113,7 +113,7 @@ def mabcd(a, new = 'mabcd'):
     else:
         return "`new` must be either 'link' or 'mabcd'"
 
-def get_lanes(a, existing = 'XSP', new = 'DTIMS'):
+def get_lanes(a, current = 'XSP', new = 'DTIMS'):
     import pandas as pd
     import numpy as np
     xsp = pd.Series(['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'R1', 'R2', 'R3', 'R4', 'R5', 'LL1', 'LL2', 'LL3', 'LR1', 'LR2', 'LR3', 'RL1', 'RL2', 'RL3', 'RR1', 'RR2', 'RR3', 'LO', 'RO', 'L', 'R'])
@@ -124,7 +124,23 @@ def get_lanes(a, existing = 'XSP', new = 'DTIMS'):
     #Check that the user is using possible 'current' and 'new' parameters
     if not np.prod([x in ['xsp', 'lane', 'description', 'dtims'] for x in [current.lower(), new.lower()]]):
         return "`current` and `new` must be from ['xsp', 'dirn', 'description, 'dtims']"
+    if current.lower() == 'xsp':
+        old = xsp
+    if current.lower() == 'description':
+        old = description
+    if current.lower() == 'lane':
+        old = lane
+    if current.lower() == 'dtims':
+        old = dtims
+    if new.lower() == 'xsp':
+        new = xsp
+    if new.lower() == 'description':
+        new = description
+    if new.lower() == 'lane':
+        new = lane
+    if new.lower() == 'dtims':
+        new = dtims
 
-    lane_dict = dict(zip(existing, new))
+    lane_dict = dict(zip(current, new))
 
-    return [lane_dict[k] for k in existing]  
+    return [lane_dict[k] for k in current]  
