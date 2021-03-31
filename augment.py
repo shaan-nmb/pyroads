@@ -92,14 +92,14 @@ def route_description(a, method = "new"):
     if method == "old": 
         route_dict = dict(zip(old_routes, route_description))
     
-    route = data.map(route_dict)
+    route = a.map(route_dict)
 
     return route
 
 def mabcd(a, new = 'mabcd'):
     
-    link_category = ['MI', 'MFF', 'AW', 'AW+', 'BW', 'BW+', 'CW']
-    mabcd = ['M', 'M', 'A', 'A', 'B', 'B', 'C']
+    link_category = ['MI', 'MFF', 'AW', 'AW+', 'BW', 'BW+', 'CW', 'DW']
+    mabcd = ['M', 'M', 'A', 'A', 'B', 'B', 'C', 'D']
 
     mabcd_dict = dict(zip(link_category, mabcd))
     link_cat_dict = dict(zip(link_category, mabcd))
