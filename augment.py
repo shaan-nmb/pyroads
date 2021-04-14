@@ -58,7 +58,7 @@ def ra_transform(a, method = "name"):
     import pandas as pd
 
     number = [1, 2, 5, 6, 7, 8, 11, 14]
-    name = ["Great Southern", "South West", "Godlfields-Esperance", "Kimberley", "Metropolitan", "Wheatbelt", "Pilbara", "Mid West-Gascoyne"]
+    name = ["Great Southern", "South West", "Goldfields-Esperance", "Kimberley", "Metropolitan", "Wheatbelt", "Pilbara", "Mid West-Gascoyne"]
     
     if method == "name":
         ra_dict = dict(zip(name, number))
@@ -125,22 +125,22 @@ def get_lanes(a, current = 'XSP', new = 'DTIMS'):
     if not np.prod([x in ['xsp', 'lane', 'description', 'dtims'] for x in [current.lower(), new.lower()]]):
         return "`current` and `new` must be from ['xsp', 'dirn', 'description, 'dtims']"
     if current.lower() == 'xsp':
-        old = xsp
+        old_data = xsp
     if current.lower() == 'description':
-        old = description
+        old_data = description
     if current.lower() == 'lane':
-        old = lane
+        old_data = lane
     if current.lower() == 'dtims':
-        old = dtims
+        old_data = dtims
     if new.lower() == 'xsp':
-        new = xsp
+        new_data = xsp
     if new.lower() == 'description':
-        new = description
+        new_data = description
     if new.lower() == 'lane':
-        new = lane
+        new_data = lane
     if new.lower() == 'dtims':
-        new = dtims
+        new_data = dtims
 
-    lane_dict = dict(zip(current, new))
+    lane_dict = dict(zip(old_data, new_data))
 
-    return [lane_dict[k] for k in current]  
+    return a.map(lane_dict) 
