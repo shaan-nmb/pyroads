@@ -1,6 +1,6 @@
 
 #From a start point, generate a deterioration curve based on a given rate and intervals to compound by.
-def deteriorate(start, end_at = None, n_periods, rate, n_intervals = 1, percentage = False):
+def deteriorate(initial, rate,  final = False, n_periods = False, n_intervals = 1, percentage = False):
     
     if percentage:
         factor = 100
@@ -9,10 +9,20 @@ def deteriorate(start, end_at = None, n_periods, rate, n_intervals = 1, percenta
 
     interval_rate = (1 + rate/factor)**(1/n_intervals)
 
-    l = [start]
-    while l[-1] >= end_at or len(start) <= (n_intervals*n_periods):
-        val = l[-1]*(1-rate)
-        l.append(val)
+    l = [initial]
+
+    if n_periods and final: 
+        while l[-1] >= final and len(l) <= (n_intervals*n_periods):
+            val = l[-1]*(1-rate)
+            l.append(val)
+    if n_periods and not final:
+        while len(l) <= (n_intervals*n_periods):
+            val = l[-1]*(1-rate)
+            l.append(val)
+    if final and not n_periods:
+        while l[-1] >= final:
+            val = l[-1]*(1-rate)
+            l.append(val)
 
 
     return l
