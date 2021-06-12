@@ -27,7 +27,7 @@ def stretch(data, starts, ends, prefixes = ['', 'true_'], segment_size = 'GCD', 
  
 
     SLKs = [SLK for SLK in starts + ends]
-    new_data = data.copy().reset_index()ß #Copy of the dataset
+    new_data = data.copy().reset_index(drop = True) #Copy of the dataset
     new_data = new_data.dropna(thresh = 2)  #drop any row that does not contain at least two non-missing values.
     
     if type(sort) == list:
@@ -60,8 +60,6 @@ def stretch(data, starts, ends, prefixes = ['', 'true_'], segment_size = 'GCD', 
     else: 
         for SLK in SLKs:
             new_data[SLK] = new_data[SLK]/1000
-    
-    new_data.drop(['index'], axis = 1, inplace = Trueß)
 
     return new_data
 
