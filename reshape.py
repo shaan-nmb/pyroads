@@ -279,7 +279,7 @@ def lane_to_dirn(data, name = None, dirn_name = 'DIRN'):
     new_data.loc[:, dirn_name] = np.where(data[name].str.contains("^L"), 'L', 'R')
     return new_data.reset_index(drop = True)
 
-def widen_by_lane(data, start, end, ids, grouping, xsp = 'xsp', dirn = 'dirn', reverse = True, keep_config = True, segment_size = 100):
+def widen_by_lane(data, start, end, ids, grouping, xsp = 'xsp', dirn = 'dirn', reverse = True, keep_config = True, max_segment = 100):
     
     #0: Prep
     prep_df = data.loc[:, ids + [start, end] + grouping + [xsp, dirn]].copy() #0.1 Select only the columns of interest
