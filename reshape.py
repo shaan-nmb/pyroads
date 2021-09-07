@@ -109,7 +109,7 @@ def compact(data, true_SLK = None, lanes = [], SLK = None, obs_length = 10, idva
     
     return compact_data
     
-def make_segments(data, SLK_type = "both", start = None, end = None, true_start = None, true_end = None, segment_size = 100):
+def make_segments(data, SLK_type = "both", start = None, end = None, true_start = None, true_end = None, max_segment = 100):
     
     import numpy as np
     
@@ -146,13 +146,13 @@ def make_segments(data, SLK_type = "both", start = None, end = None, true_start 
         new_data[var] = asmetres(new_data[var])
     
     #Reshape the data into size specified in 'obs_length'
-    new_data = new_data.reindex(new_data.index.repeat(np.ceil((new_data[ends[0]] - new_data[starts[0]])/segment_size))) #reindex by the number of intervals of specified length between the start and the end.
+    new_data = new_data.reindex(new_data.index.repeat(np.ceil((new_data[ends[0]] - new_data[starts[0]])/max_segment))) #reindex by the number of intervals of specified length between the start and the end.
     for var in starts:
     #Increment the rows by the segment size
-        new_data[var] = (new_data[var] + new_data.groupby(level=0).cumcount()*segment_size) 
+        new_data[var] = (new_data[var] + new_data.groupby(level=0).cumcount()*max_segment) 
     for start_,end_ in zip(starts, ends):
     #End SLKs are equal to the lead Start SLKS except where the segment ends
-        new_data[end_] = np.where((new_data[start_].shift(-1) - new_data[start_]) == segment_size, new_data[start_].shift(-1), new_data[end_])
+        new_data[end_] = np.where((new_data[start_].shift(-1) - new_data[start_]) == max_segment, new_data[start_].shift(-1), new_data[end_])
     
     #Convert SLK variables back to km
     for var in SLKs:
@@ -194,14 +194,14 @@ def merge(left, rights = [], by = ['road_no', 'cway'], start_names = [], end_nam
     
     cway_names = ['cway', 'carriageway', 'carriage way', 'cways']
     
-    dirn_names = ['dirn', 'direction']
+    side_names = ['side', 'direction']
     
     lane_names = ['xsp', 'lane', 'lane no', 'lane number']
     
     #Give all dataframes the same start and end slk column names.
     import numpy as np
     for i in range(len(dfs)):
-        dfs[i].rename(lambda x: 'start_slk' if x in start_names else ('end_slk' if x in end_names else ('road_no' if x in road_no_names else ('cway' if x in cway_names else ('dirn' if x in dirn_names else ('xsp' if x in lane_names else x))))), axis = 1, inplace = True)
+        dfs[i].rename(lambda x: 'start_slk' if x in start_names else ('end_slk' if x in end_names else ('road_no' if x in road_no_names else ('cway' if x in cway_names else ('side' if x in side_names else ('xsp' if x in lane_names else x))))), axis = 1, inplace = True)
 
     #find the greatest common divisor SLKs for all of the datasets
     start_and_end = dfs[0].loc[:,['start_slk', 'end_slk']]
@@ -218,7 +218,7 @@ def merge(left, rights = [], by = ['road_no', 'cway'], start_names = [], end_nam
         rights_copy[i] = stretch(rights_copy[i], starts = ['start_slk'], ends = ['end_slk'], segment_size = gcd)
      
     #set index names for joining
-    index_names = ['road_no' if x in road_no_names else 'cway' if x in cway_names else 'dirn' if x in dirn_names else 'xsp' if x in lane_names else "" for x in by]
+    index_names = ['road_no' if x in road_no_names else 'cway' if x in cway_names else 'side' if x in side_names else 'xsp' if x in lane_names else "" for x in by]
     index_names = [x for x in index_names if x!= ""] + ['start_slk', 'end_slk']
     
     for i in range(len(dfs)):
@@ -230,7 +230,7 @@ def merge(left, rights = [], by = ['road_no', 'cway'], start_names = [], end_nam
     
     return merged_data 
     
-def cway_to_dirn(data, name = None):
+def cway_to_side(data, name = None):
 
     import numpy as np
     import pandas as pd 
@@ -239,30 +239,30 @@ def cway_to_dirn(data, name = None):
         names = [col for col in data.columns if "cway" in col.lower()]
         if len(names) != 1:
             if len(names) == 0:
-                return 'ERROR cway_to_dirn(name): Please specify the name of the carriageway column.'
+                return 'ERROR cway_to_side(name): Please specify the name of the carriageway column.'
             else:
-                return print('ERROR cway_to_dirn(name): Please specify the name of the carriageway column.',  'Found:', names)
+                return print('ERROR cway_to_side(name): Please specify the name of the carriageway column.',  'Found:', names)
         else:
             name = names[0]
     data_right = data[data[name].isin(['s', 'r', 'S', 'R'])].copy()
-    data_right.loc[:,'DIRN'] = 'R'
+    data_right.loc[:,'side'] = 'R'
     data_left = data[data[name].isin(['s', 'l', 'S', 'R'])].copy()
-    data_left.loc[:,'DIRN'] = 'L'
+    data_left.loc[:,'side'] = 'L'
     new_data = pd.concat([data_right, data_left])
     return new_data.reset_index(drop = True)
 
-def hsd_to_dirn(data, dirn_name = 'DIRN'):
+def hsd_to_side(data, side_name = 'side'):
     
     import numpy as np
 
-    new_data = cway_to_dirn(data)
-    new_data.loc[:,'Rutt'] = np.where(new_data[dirn_name] == 'L', new_data.filter(regex = "^L_RUT").mean(axis = 1), new_data.filter(regex = "^R_RUT").mean(axis = 1))
-    new_data.loc[:,'Rough'] = np.where(new_data[dirn_name] == 'L', new_data.filter(regex = "^L_LANE_IRI").mean(axis = 1), new_data.filter(regex = "^R_LANE_IRI").mean(axis = 1))
+    new_data = cway_to_side(data)
+    new_data.loc[:,'Rutt'] = np.where(new_data[side_name] == 'L', new_data.filter(regex = "^L_RUT").mean(axis = 1), new_data.filter(regex = "^R_RUT").mean(axis = 1))
+    new_data.loc[:,'Rough'] = np.where(new_data[side_name] == 'L', new_data.filter(regex = "^L_LANE_IRI").mean(axis = 1), new_data.filter(regex = "^R_LANE_IRI").mean(axis = 1))
     new_data = new_data.loc[:,[col for col in new_data.columns if col not in new_data.filter(regex = "^(L|R)_").columns]]
     
     return new_data.reset_index(drop = True)
 
-def lane_to_dirn(data, name = None, dirn_name = 'DIRN'):
+def lane_to_side(data, name = None, side_name = 'side'):
 
     import numpy as np
 
@@ -271,33 +271,33 @@ def lane_to_dirn(data, name = None, dirn_name = 'DIRN'):
         names = [col for col in data.columns if "xsp" in col.lower() or "lane" in col.lower()]
         if len(names) != 1:
             if len(names) == 0:
-                return 'ERROR lane_to_dirn(name = None): Please specify the name of the `lane` column.'
+                return 'ERROR lane_to_side(name = None): Please specify the name of the `lane` column.'
             else:
-                return print('ERROR lane_to_dirn(name = None): Please specify the name of the `lane` column.',  'Found:', names)
+                return print('ERROR lane_to_side(name = None): Please specify the name of the `lane` column.',  'Found:', names)
         else:
             name = names[0]            
-    new_data.loc[:, dirn_name] = np.where(data[name].str.contains("^L"), 'L', 'R')
+    new_data.loc[:, side_name] = np.where(data[name].str.contains("^L"), 'L', 'R')
     return new_data.reset_index(drop = True)
 
-def widen_by_lane(data, start, end, ids, grouping, xsp = 'xsp', dirn = 'dirn', reverse = True, keep_config = True, max_segment = 100):
+def widen_by_lane(data, start, end, ids, grouping, xsp = 'xsp', side = 'side', reverse = True, keep_config = True, max_segment = 100):
     
     #0: Prep
-    prep_df = data.loc[:, ids + [start, end] + grouping + [xsp, dirn]].copy() #0.1 Select only the columns of interest
+    prep_df = data.loc[:, ids + [start, end] + grouping + [xsp, side]].copy() #0.1 Select only the columns of interest
     
     #1: Create Direction based dataframe
     prep_df.loc[:,xsp] = prep_df.loc[:,xsp].str[1:] #1.1 Remove the direction prefix from the xsp column 
-    prep_df_l, prep_df_r = prep_df[prep_df.loc[:,dirn] == "L"], prep_df[prep_df.loc[:,dirn] == "R"] #1.2 Split into two frames, one for each direction.
-    dirn_df = pd.concat([prep_df_l, prep_df_r]) #1.3 Concatenate the split frames together
+    prep_df_l, prep_df_r = prep_df[prep_df.loc[:,side] == "L"], prep_df[prep_df.loc[:,side] == "R"] #1.2 Split into two frames, one for each direction.
+    side_df = pd.concat([prep_df_l, prep_df_r]) #1.3 Concatenate the split frames together
     
     #2: Stretch dataframe into equal segment lengths
-    stretch_size = gcd_list(asmetres(dirn_df[end]) - asmetres(dirn_df[start])) #Size by which to stretch into equal segments
-    stretched_df = stretch(dirn_df, starts = [start], ends = [end], segment_size = stretch_size, sort = ids + [dirn, start])
+    stretch_size = gcd_list(asmetres(side_df[end]) - asmetres(side_df[start])) #Size by which to stretch into equal segments
+    stretched_df = stretch(side_df, starts = [start], ends = [end], max_segment = stretch_size, sort = ids + [side, start])
     
     #3: Pivot frame on ID variables by xsp for selected grouping columns
     if keep_config:
-        pivoted_df = stretched_df.pivot(index = ids + ['start', 'end', dirn], columns = xsp, values = grouping + [xsp]) #Keep dummy variables of the lanes if keep_config true
+        pivoted_df = stretched_df.pivot(index = ids + ['start', 'end', side], columns = xsp, values = grouping + [xsp]) #Keep dummy variables of the lanes if keep_config true
     else:
-        pivoted_df = stretched_df.pivot(index = ids + ['start', 'end', dirn], columns = xsp, values = grouping)
+        pivoted_df = stretched_df.pivot(index = ids + ['start', 'end', side], columns = xsp, values = grouping)
         
     if reverse:
         pivoted_df = pivoted_df[sorted(pivoted_df.columns, reverse = True)]
@@ -314,11 +314,11 @@ def widen_by_lane(data, start, end, ids, grouping, xsp = 'xsp', dirn = 'dirn', r
     #4: Compact by IDs + Direction
     lanes = [lane for lane in pivoted_df.columns if xsp in lane]
     if keep_config:
-        compact_df = compact(pivoted_df, SLK = 'start', lanes = lanes, obs_length = stretch_size, idvars = ids + [dirn],  grouping = compact_by + [col for col in pivoted_df.columns if xsp in col])
+        compact_df = compact(pivoted_df, SLK = 'start', lanes = lanes, obs_length = stretch_size, idvars = ids + [side],  grouping = compact_by + [col for col in pivoted_df.columns if xsp in col])
     else:
-        compact_df = compact(pivoted_df, SLK = 'start', lanes = lanes, obs_length = stretch_size, idvars = ids + [dirn],  grouping = compact_by)
+        compact_df = compact(pivoted_df, SLK = 'start', lanes = lanes, obs_length = stretch_size, idvars = ids + [side],  grouping = compact_by)
     
     #5: Make into segment lengths of choice
-    final_df = make_segments(compact_df, SLK_type = "true", true_start = "startstart", true_end = "startend", segment_size = segment_size)
+    final_df = make_segments(compact_df, SLK_type = "true", true_start = "startstart", true_end = "startend", max_segment = max_segment)
     
     return final_df
