@@ -21,7 +21,7 @@ def gcd_list(items):
     return result
 
 ##Turn each observation into sections of specified lengths
-def stretch(data, starts, ends, prefixes = ['', 'true_'], segment_size = 'GCD', keep_ranges = False, sort = None, keep_ends = False):
+def stretch(data, starts, ends, prefixes = ['', 'true_'], segment_size = 'GCD', keep_ranges = False, sort = None, keep_ends = False, km = True):
 
     import numpy as np
  
@@ -47,8 +47,11 @@ def stretch(data, starts, ends, prefixes = ['', 'true_'], segment_size = 'GCD', 
     for start, end, prefix in zip(starts, ends, prefixes):
     #End SLKs are equal to the lead Start SLKS except where the segment ends
         new_data[prefix + 'end'] = np.where((new_data[prefix + 'start'].shift(-1) - new_data[prefix + 'start']) == segment_size, new_data[prefix+'start'].shift(-1), new_data[end])
-        new_data[prefix + 'end'] = new_data[prefix + 'end']/1000
-        new_data[prefix + 'start'] = new_data[prefix + 'start']/1000
+        if km:
+            if keep_ends:
+                new_data[prefix + 'end'] = new_data[prefix + 'end']/1000
+                
+                new_data[prefix + 'start'] = new_data[prefix + 'start']/1000
         
     
     new_data = new_data.reset_index(drop = True)

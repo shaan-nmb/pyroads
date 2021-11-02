@@ -27,33 +27,53 @@ def concat_cols(left, right, key = "NATURAL_KEY", new_cols = []):
     concat_data = left.copy().merge(right[new_cols], how = 'left', on = key, suffixes = ('','_right'))
     return concat_data
 
-###Find points of equation and add the information to the dataset
-# def pointOfEquation(data, SLK, locationVars)
-# #Find the Points of Equations by searching for duplicate SLKs for the same location variables
-
-def surf_type(data, old_col, new_col = 'surface_type', method = "short"):
-    surf_no = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    full = ["Asphalt Dense Graded", "Asphalt Intersection Mix", "Asphalt Open Graded", "Concrete", "Paving", "Primer Seal", "Rubberised Seal", "Single Seal", "Slurry Seal", "Two Coat Seal", "Asphalt Sotne Mastic", "Asphalt Open Graded on Dense Graded"]
-    short = ["DGA", "IMA", "OGA", "Concrete", "Paving", "Primer Seal", "Rubberised Seal", "Single Seal", "Slurry Seal", "Two Coat Seal", "SMA", "OGA on DGA"]
-    asphalt = ["DGA", "IMA", "OGA", "Other", "Other", "Seal", "Seal", "Seal", "Seal", "Seal", "SMA", "OGA on DGA"]
-    grouped = ["Asphalt", "Asphalt", "Asphalt", "Other", "Other", "Seal", "Seal", "Seal", "Seal", "Seal", "Asphalt", "Asphalt", "Asphalt"]
-    
+def surf_type(data, old_col, method = "short"):
+    surf_id = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    full = ["Asphalt Dense Graded", "Asphalt Intersection Mix", "Asphalt Open Graded", "Concrete", "Paving", "Primer Seal", "Rubberised Seal", "Single Seal", "Slurry Seal", "Two Coat Seal", "Asphalt Sotne Mastic", "Asphalt Open Graded on Dense Graded", "Asphalt Gap Graded Rubberised (GGAR)"]
+    short = ["DGA", "IMA", "OGA", "Concrete", "Paving", "Primer Seal", "Rubberised Seal", "Single Seal", "Slurry Seal", "Two Coat Seal", "SMA", "OGA on DGA", "GGAR"]
+    asphalt = ["DGA", "IMA", "OGA", "Other", "Other", "Seal", "Seal", "Seal", "Seal", "Seal", "SMA", "OGA on DGA", "GGAR"]
+    grouped = ["Asphalt", "Asphalt", "Asphalt", "Other", "Other", "Seal", "Seal", "Seal", "Seal", "Seal", "Asphalt", "Asphalt", "Asphalt", 'Asphalt']
+    group_id = [1,1,1,2,2,3,3,3,3,3,1,1,1,1]
     
     if method == "full":
-        surf_dict = dict(zip(surf_no, full))
+        surf_dict = dict(zip(surf_id, full))
     elif method == "short":
-        surf_dict = dict(zip(surf_no, short))
+        surf_dict = dict(zip(surf_id, short))
     elif method == "asphalt":
-        surf_dict = dict(zip(surf_no, asphalt))
+        surf_dict = dict(zip(surf_id, asphalt))
     elif method == "grouped":
-        surf_dict = dict(zip(surf_no, grouped))
+        surf_dict = dict(zip(surf_id, grouped))
+    elif method == 'group_id':
+         surf_dict = dict(zip(surf_id, group_id))   
     else:
         return print("ERROR surf_type(method): Please choose a method from ['full', 'short', 'asphalt', grouped'].")
     
-    data[new_col] = data[old_col].map(surf_dict)
-    return data[new_col]
-
-def ra_transform(a, method = "name"):
+    return data[old_col].map(surf_dict)
+ 
+def surf_id(data, old_col, method = "short"):
+    surf_id = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    full = ["Asphalt Dense Graded", "Asphalt Intersection Mix", "Asphalt Open Graded", "Concrete", "Paving", "Primer Seal", "Rubberised Seal", "Single Seal", "Slurry Seal", "Two Coat Seal", "Asphalt Stone Mastic", "Asphalt Open Graded on Dense Graded", 'Asphalt Gap Graded Rubberised (GGAR)']
+    short = ["DGA", "IMA", "OGA", "Concrete", "Paving", "Primer Seal", "Rubberised Seal", "Single Seal", "Slurry Seal", "Two Coat Seal", "SMA", "OGA on DGA"]
+    asphalt = ["DGA", "IMA", "OGA", "Other", "Other", "Seal", "Seal", "Seal", "Seal", "Seal", "SMA", "OGA on DGA", 'GGAR']
+    grouped = ["Asphalt", "Asphalt", "Asphalt", "Other", "Other", "Seal", "Seal", "Seal", "Seal", "Seal", "Asphalt", "Asphalt", "Asphalt", 'Asphalt']
+    group_id = [1,1,1,2,2,3,3,3,3,3,1,1,1,1]
+    
+    if method == "full":
+        surf_dict = dict(zip(full, surf_id))
+    elif method == "short":
+        surf_dict = dict(zip(short, surf_id))
+    elif method == "asphalt":
+        surf_dict = dict(zip(asphalt, surf_id))
+    elif method == "grouped":
+        surf_dict = dict(zip(grouped, surf_id))
+    elif method == 'group_id':
+         surf_dict = dict(zip(group_id, surf_id))   
+    else:
+        return print("ERROR surf_type(method): Please choose a method from ['full', 'short', 'asphalt', grouped'].")
+    
+    return data[old_col].map(surf_dict)
+ 
+def ra_transform(x, method = "name"):
 
     import pandas as pd
 
@@ -69,7 +89,7 @@ def ra_transform(a, method = "name"):
     
     return ra
 
-def route_change(a, method = "new"):
+def route_change(x, method = "new"):
     old_routes = [1.1, 2.1, 3.1, 2.2, 5.1, 6.1, 7.1, 8.1, 9.1, 10.1, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0]
     new_routes = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
 
@@ -81,7 +101,7 @@ def route_change(a, method = "new"):
     route_no = a.map(route_dict) 
     return route_no
     
-def route_description(a, method = "new"):
+def route_description(x, method = "new"):
     
     old_routes = [1.1, 2.1, 3.1, 2.2, 5.1, 6.1, 7.1, 8.1, 9.1, 10.1, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0]
     new_routes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
@@ -96,7 +116,7 @@ def route_description(a, method = "new"):
 
     return route
 
-def mabcd(a, new = 'mabcd'):
+def mabcd(x, new = 'mabcd'):
     
     link_category = ['MI', 'MFF', 'AW', 'AW+', 'BW', 'BW+', 'CW', 'DW']
     mabcd = ['M', 'M', 'A', 'A', 'B', 'B', 'C', 'D']
@@ -113,34 +133,48 @@ def mabcd(a, new = 'mabcd'):
     else:
         return "`new` must be either 'link' or 'mabcd'"
 
-def get_lanes(a, current = 'XSP', new = 'DTIMS'):
+pave_type_dict = {'Asphalt': 10, 'Clay': 5, 'Concrete': 6, 'Crushed Rock': 3, 'Ferricrete': 11, 'Gravel': 2, 'Limestone': 7, 'HCT': 9, 'Recycled Material': 8, 'Sand': 4, 'Sand Clay': 1, 'Unknown': 0}
+
+def get_lanes(x, current = 'xsp', new = 'dtims'):
     import pandas as pd
     import numpy as np
+
+    #Check that the user is using possible 'current' and 'new' parameters
+    if not np.prod([x in ['xsp', 'lane', 'description', 'dtims'] for x in [current, new]]):
+        return "`current` and `new` must be from ['xsp', 'dirn', 'description, 'dtims']"
+
     xsp = pd.Series(['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'R1', 'R2', 'R3', 'R4', 'R5', 'LL1', 'LL2', 'LL3', 'LR1', 'LR2', 'LR3', 'RL1', 'RL2', 'RL3', 'RR1', 'RR2', 'RR3', 'LO', 'RO', 'L', 'R'])
     lane = np.where(xsp.str.contains("^L", regex = True), "L", np.where(xsp.str.contains("^R", regex = True), "R", 'Unknown'))
     description = ["Left lane 2", "Left lane 3", "Left lane 4", "Left lane 5", "Left lane 6", "Right lane 1", "Right lane 2", "Right lane 3", "Right lane 4", "Right lane 5", "Left carriageway, left turn pocket 1", "Left carriageway, left turn pocket 2", "Left carriageway, left turn pocket 3", "Left carriageway, right turn pocket 1", "Left carriageway, right turn pocket 2", "Left carriageway, right turn pocket 3", "Right carriageway, left turn pocket 1", "Right carriageway, left turn pocket 2", "Right carriageway, left turn pocket 3", "Right carriageway, right turn pocket 1", "Right carriageway, right turn pocket 2", "Right carriageway, right turn pocket 3", "Left overtaking lane", "Right overtaking lane", "Left shoulder", "Right shoulder"]
     dtims = [1, 3, 5, 7, 9, 11, 2, 4, 6, 8, 10, 21, 23, 25, 31, 33, 35, 22, 24, 26, 32, 34, 36, 41, 42, 51, 52] 
-
-    #Check that the user is using possible 'current' and 'new' parameters
-    if not np.prod([x in ['xsp', 'lane', 'description', 'dtims'] for x in [current.lower(), new.lower()]]):
-        return "`current` and `new` must be from ['xsp', 'dirn', 'description, 'dtims']"
-    if current.lower() == 'xsp':
+   
+    if current == 'xsp':
         old_data = xsp
-    if current.lower() == 'description':
+    if current == 'description':
         old_data = description
-    if current.lower() == 'lane':
+    if current == 'lane':
         old_data = lane
-    if current.lower() == 'dtims':
+    if current == 'dtims':
         old_data = dtims
-    if new.lower() == 'xsp':
+    if new == 'xsp':
         new_data = xsp
-    if new.lower() == 'description':
+    if new == 'description':
         new_data = description
-    if new.lower() == 'lane':
+    if new == 'lane':
         new_data = lane
-    if new.lower() == 'dtims':
+    if new == 'dtims':
         new_data = dtims
 
     lane_dict = dict(zip(old_data, new_data))
 
     return a.map(lane_dict) 
+
+def get_roads(x, current = 'number', new = 'name'):
+    import pands as pd
+    import numpy as np
+
+    #Check that the user is using possible 'current' and 'new' parameters
+    if not np.prod([x in ['id', 'number', 'name'] for x in [current, new]]):
+        return "`current` and `new` must be from ['id', 'number', 'name']"
+
+    
