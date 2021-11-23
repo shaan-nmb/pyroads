@@ -48,10 +48,10 @@ def stretch(data, starts, ends, prefixes = ['', 'true_'], segment_size = 'GCD', 
     #End SLKs are equal to the lead Start SLKS except where the segment ends
         new_data[prefix + 'end'] = np.where((new_data[prefix + 'start'].shift(-1) - new_data[prefix + 'start']) == segment_size, new_data[prefix+'start'].shift(-1), new_data[end])
         if km:
+            new_data[prefix + 'start'] = new_data[prefix + 'start']/1000
             if keep_ends:
                 new_data[prefix + 'end'] = new_data[prefix + 'end']/1000
-                
-                new_data[prefix + 'start'] = new_data[prefix + 'start']/1000
+
         
     
     new_data = new_data.reset_index(drop = True)
