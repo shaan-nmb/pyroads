@@ -68,22 +68,37 @@ def stretch(data, starts, ends, prefixes = ['', 'true_'], segment_size = 'GCD', 
         new_data = new_data.loc[:, ~new_data.columns.str.endswith('end')]
     return new_data
 
-def compact(data, true_SLK = None, lanes = [], SLK = None, obs_length = 10, idvars = [], grouping = [], new_start_col = "start", new_end_col = "end"):
+def compact(data, true_SLK = None, SLK = None, lane = None, obs_length = 10, idvars = [], grouping = None, new_start_col = "start", new_end_col = "end", km = False):
     
-    SLKs = [SLK for SLK in [true_SLK, SLK] if SLK is not None]
+    SLKs = [slk for slk in [true_SLK, SLK] if slk is not None]
     
+    if not grouping:
+        grouping = [col for col in data if col not in idvars + grouping]
+
     import numpy as np
+
     #Sort by all columns in grouping, then by true SLK, then by SLK
-    new_data = data.copy().sort_values(idvars + SLKs + lanes).reset_index(drop = True)
+    if lane is None:
+        lane = []
+    else:
+        lane = [lane]
+
+    new_data = data.copy().sort_values(idvars + SLKs + lane).reset_index(drop = True)
+
+    #Check for points of equations where there is both SLK and true SLK
+    if true_SLK and SLK:
+        new_data['slk_diff'] = new_data[true_SLK] - new_data[SLK]
+        grouping.append('slk_diff')
 
     #Create a column that is a concatenation of all the columns in the grouping
     new_data.insert(0, "groupkey", "")
     for var in grouping+idvars:
-        new_data["groupkey"] += new_data[var].astype(str) + '-'
+        new_data["groupkey"] += new_data[var].astype(str) + '_'
 
     #Change SLK variables to 32 bit integers of metres to avoid the issue with calculations on floating numbers
-    for SLK in SLKs:
-        new_data[SLK] = asmetres(new_data[SLK])
+    if km:
+        for SLK in SLKs:
+            new_data[SLK] = asmetres(new_data[SLK])
 
     #Create lag and lead columns for SLK, true SLK, and the grouping key to check whether a new group has started
     for var in SLKs:
@@ -110,7 +125,7 @@ def compact(data, true_SLK = None, lanes = [], SLK = None, obs_length = 10, idva
         compact_data.insert(len(idvars)+1,  var + new_end_col, (new_data[end].reset_index(drop = True)[var] + obs_length)/1000)
         new_SLKs += [var + new_start_col, var + new_end_col]   
 
-    compact_data = compact_data.sort_values(idvars + new_SLKs + lanes).reset_index(drop = True) #Sort data by the location varibles
+    compact_data = compact_data.sort_values(idvars + new_SLKs + lane).reset_index(drop = True) #Sort data by the location varibles
     
     return compact_data
     
