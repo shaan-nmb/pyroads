@@ -21,11 +21,10 @@ def gcd_list(items):
     return result
 
 ##Turn each observation into sections of specified lengths
-def stretch(data, starts, ends, prefixes = ['', 'true_'], segment_size = 'GCD', keep_ranges = False, sort = None, keep_ends = False, km = True):
+def stretch(data, start = None, end = None, true_start = None, true_end = None, prefixes = ['', 'true_'], segment_size = 'GCD', keep_ranges = False, sort = None, keep_ends = False, km = True):
 
     import numpy as np
  
-
     SLKs = [SLK for SLK in starts + ends]
     new_data = data.copy().reset_index(drop = True) #Copy of the dataset
     new_data = new_data.dropna(thresh = 2)  #drop any row that does not contain at least two non-missing values.
@@ -42,8 +41,10 @@ def stretch(data, starts, ends, prefixes = ['', 'true_'], segment_size = 'GCD', 
         
     #Reshape the data into size specified in 'obs_length'
     new_data = new_data.reindex(new_data.index.repeat(np.ceil((new_data[ends[0]] - new_data[starts[0]])/segment_size))) #reindex by the number of intervals of specified length between the start and the end.
+    
     for start, prefix in zip(starts, prefixes):
         new_data[prefix + 'start'] = (new_data[start] +  new_data.groupby(level = 0).cumcount()*segment_size)
+    
     for start, end, prefix in zip(starts, ends, prefixes):
     #End SLKs are equal to the lead Start SLKS except where the segment ends
         new_data[prefix + 'end'] = np.where((new_data[prefix + 'start'].shift(-1) - new_data[prefix + 'start']) == segment_size, new_data[prefix+'start'].shift(-1), new_data[end])
@@ -85,15 +86,18 @@ def compact(data, true_SLK = None, SLK = None, lane = None, obs_length = 10, idv
 
     new_data = data.copy().sort_values(idvars + SLKs + lane).reset_index(drop = True)
 
+    #Create a column that is a concatenation of all the columns in the grouping
+    new_data.insert(0, "groupkey", "")
+
     #Check for points of equations where there is both SLK and true SLK
     if true_SLK and SLK:
         new_data['slk_diff'] = new_data[true_SLK] - new_data[SLK]
-        grouping.append('slk_diff')
-
-    #Create a column that is a concatenation of all the columns in the grouping
-    new_data.insert(0, "groupkey", "")
-    for var in grouping+idvars:
-        new_data["groupkey"] += new_data[var].astype(str) + '_'
+        
+        for var in grouping + idvars + ['slk_diff']:
+            new_data["groupkey"] += new_data[var].astype(str) + '_'
+    else:
+        for var in grouping + idvars:
+            new_data["groupkey"] += new_data[var].astype(str) + '_'
 
     #Change SLK variables to 32 bit integers of metres to avoid the issue with calculations on floating numbers
     if km:
