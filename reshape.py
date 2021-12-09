@@ -21,16 +21,19 @@ def gcd_list(items):
     return result
 
 ##Turn each observation into sections of specified lengths
-def stretch(data, start = None, end = None, true_start = None, true_end = None, prefixes = ['', 'true_'], segment_size = 'GCD', keep_ranges = False, sort = None, keep_ends = False, km = True):
+def stretch(data, start = None, end = None, start_true = None, end_true = None, segment_size = 'GCD', keep_ranges = False, sort = None, km = True):
 
     import numpy as np
- 
-    SLKs = [SLK for SLK in starts + ends]
+    starts = [i for i in [start, start_true] if i is not None]
+    ends = [i for i in [end, end_true] if i is not None]
+    names = [v for k,v in zip([start, start_true], ['SLK', 'true_SLK']) if k is not None]
+    SLKs = starts + ends
+
     new_data = data.copy().reset_index(drop = True) #Copy of the dataset
     new_data = new_data.dropna(thresh = 2)  #drop any row that does not contain at least two non-missing values.
     
     if type(sort) == list:
-        new_data.sort_values(sort, inplace = True)
+        new_data =  new_data.sort_values(sort)
 
     #Change SLK variables to 32 bit integers of metres to avoid the issue with calculations on floating numbers
     new_data[SLKs] = new_data[SLKs].apply(asmetres)
@@ -42,39 +45,35 @@ def stretch(data, start = None, end = None, true_start = None, true_end = None, 
     #Reshape the data into size specified in 'obs_length'
     new_data = new_data.reindex(new_data.index.repeat(np.ceil((new_data[ends[0]] - new_data[starts[0]])/segment_size))) #reindex by the number of intervals of specified length between the start and the end.
     
-    for start, prefix in zip(starts, prefixes):
-        new_data[prefix + 'start'] = (new_data[start] +  new_data.groupby(level = 0).cumcount()*segment_size)
-    
-    for start, end, prefix in zip(starts, ends, prefixes):
-    #End SLKs are equal to the lead Start SLKS except where the segment ends
-        new_data[prefix + 'end'] = np.where((new_data[prefix + 'start'].shift(-1) - new_data[prefix + 'start']) == segment_size, new_data[prefix+'start'].shift(-1), new_data[end])
+    #increment the start points by observation length
+    for start_slk, end_slk, name in zip(starts, ends, names):
+        new_data[name] = new_data[start_slk] +  new_data.groupby(level = 0).cumcount()*segment_size
         if km:
-            new_data[prefix + 'start'] = new_data[prefix + 'start']/1000
-            if keep_ends:
-                new_data[prefix + 'end'] = new_data[prefix + 'end']/1000
-
+                new_data[name] = new_data[name]/1000               
         
-    
+    for start_slk, end_slk in zip(starts, ends):
+    #End SLKs are equal to the lead Start SLKS except where the segment ends
+        new_data[end_slk] = np.where((new_data[start_slk].shift(-1) - new_data[start_slk]) == segment_size, new_data[start_slk].shift(-1), new_data[end_slk])
+        
     new_data = new_data.reset_index(drop = True)
 
     #Drop the variables no longer required
-    if not keep_ranges:
-        new_data.drop([SLK for SLK in SLKs], axis = 1, inplace = True)
-        new_data = new_data.reset_index(drop = True)
-    else: 
+    if keep_ranges:
         for SLK in SLKs:
-            new_data[SLK] = new_data[SLK]/1000
+            if km:
+                new_data[SLK] = new_data[SLK]/1000        
+    else:
+        new_data = new_data.drop([SLK for SLK in SLKs], axis = 1)
+        new_data = new_data.reset_index(drop = True)
 
-    if not keep_ends:
-        new_data = new_data.loc[:, ~new_data.columns.str.endswith('end')]
     return new_data
 
-def compact(data, true_SLK = None, SLK = None, lane = None, obs_length = 10, idvars = [], grouping = None, new_start_col = "start", new_end_col = "end", km = False):
+def compact(data, true_SLK = None, SLK = None, lane = None, obs_length = 10, idvars = [], grouping = None, new_start_col = "START_SLK", new_end_col = "END_SLK", km = False):
     
     SLKs = [slk for slk in [true_SLK, SLK] if slk is not None]
     
-    if not grouping:
-        grouping = [col for col in data if col not in idvars + grouping]
+    if grouping is None:
+        grouping = [col for col in data if col not in idvars]
 
     import numpy as np
 
@@ -87,7 +86,7 @@ def compact(data, true_SLK = None, SLK = None, lane = None, obs_length = 10, idv
     new_data = data.copy().sort_values(idvars + SLKs + lane).reset_index(drop = True)
 
     #Create a column that is a concatenation of all the columns in the grouping
-    new_data.insert(0, "groupkey", "")
+    new_data.insert(0, "groupkey", 0)
 
     #Check for points of equations where there is both SLK and true SLK
     if true_SLK and SLK:
@@ -132,56 +131,240 @@ def compact(data, true_SLK = None, SLK = None, lane = None, obs_length = 10, idv
     compact_data = compact_data.sort_values(idvars + new_SLKs + lane).reset_index(drop = True) #Sort data by the location varibles
     
     return compact_data
-    
-def make_segments(data, SLK_type = "both", start = None, end = None, true_start = None, true_end = None, max_segment = 100):
+
+def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = None, start_true = None, end_true = None, lane = None, grouping = True, stretched = False, summarise = True, km = False, as_km = True):
     
     import numpy as np
     
-    original = [start, end]
-    true = [true_start, true_end]
-    starts = [var for var in [start, true_start] if var is not None]
-    ends = [var for var in [end, true_end] if var is not None]
+    #Stretch the dataframe into equal length segments if is not already
+    if stretched:
+        new_data = data.copy()
+    else:
+        new_data = stretch(data, start = start, end = end, start_true = start_true, end_true = end_true, km = False)
+        if bool(start):
+            SLK = 'SLK'
+        if bool(start_true):
+            true_SLK = 'true_SLK'
+    
+    #Detect whether operating on SLK, True SLK, or both.
+    SLKs = [slk for slk in [true_SLK, SLK] if slk is not None]
+    
+    #If the input data is in kilometres, change SLK variables to 32 bit integers of metres to avoid the issue with calculations on floating numbers
+    if km:
+        for SLK in SLKs:
+            new_data[SLK] = asmetres(new_data[SLK])
+    
+    #Calculate the observation length 
+    obs_length = new_data.loc[1, SLKs[0]] - new_data.loc[0, SLKs[0]]
+    
+    #Treat `lane` as empty list if not declared
+    lane = []
+    #By default, group by all columns other than the `idvars` (ID variables) 
+    if grouping is True:
+        grouping = [col for col in new_data if col not in idvars and col not in SLKs]
+    #If grouping is False, the variable is an empty list
+    if grouping is False:
+        grouping = []
+
+    #Sort by all columns in grouping, then by true SLK, then by SLK, then lane if declared
+    new_data = new_data.sort_values(idvars + SLKs + lane).reset_index(drop = True)
+
+    #Treat all NAs the same
+    new_data.loc[:, grouping] = new_data.loc[:, grouping].fillna(-1)
+    
+    #Create a column that is a concatenation of all the columns in the grouping
+    
+    #If both SLK and true SLK are declared, create a column equal to the diference between the two, in order to check for Points of Equation by changes in the variable
+    if true_SLK is not None and SLK is not None:
+        new_data['slk_diff'] = new_data[true_SLK] - new_data[SLK]
+        new_data.insert(0, "groupkey", new_data.groupby(grouping + idvars + lane + ['slk_diff']).ngroup())
+    else:
+        new_data.insert(0, "groupkey", new_data.groupby(grouping + idvars + lane).ngroup())
+
+    #Create lag and lead columns for SLK, true SLK, and the grouping key to check whether a new group has started
+    for var in SLKs:
+        new_data['lead_' + var] = new_data[var].shift(-1, fill_value = 0)
+        new_data['lag_' + var] = new_data[var].shift(1, fill_value = 0)
+    new_data['lead_groupkey'] = new_data['groupkey'].shift(-1, fill_value = 0)
+    new_data['lag_groupkey'] = new_data['groupkey'].shift(1, fill_value = max(new_data['groupkey']))
+
+    #Create columns based on whether they represent the start or end of a section.
+    starts, ends = {}, {}
+    
+    for var in SLKs:
+        starts[var] = np.where((new_data['lag_' + var] == (new_data[var]-obs_length)) & (new_data['lag_groupkey'] == new_data['groupkey']), False,True) #if the lagged SLKs are not one observation length less than the actual or the lagged group-key is different.
+        ends[var] = np.where((new_data['lead_' + var] == (new_data[var] + obs_length)) & (new_data['lead_groupkey'] == new_data['groupkey']), False,True)  #if the lead SLKs are not one observation length more than the actual or the lead group-key is different.
+    new_data.loc[:, 'start_bool'] = np.prod([i for i in starts.values()], axis = 0, dtype = bool)
+    new_data.loc[:, 'end_bool'] = np.prod([i for i in ends.values()], axis = 0, dtype = bool)
+    
+    new_data['segment_id'] = new_data.groupby('groupkey')['start_bool'].cumsum()
+    new_data['segment_id'] =  new_data.groupby(['groupkey', 'segment_id']).ngroup()
+    
+    new_data = new_data.drop(['start_bool', 'end_bool', 'groupkey'] + [col for col in new_data.columns if 'lag' in col or 'lead' in col], axis = 1)
+    
+    #Summarise the data by `segment_id`
+    
+    #By default, summarise the SLK into min and max columns, representing Start and End SLK respectively
+    if summarise:
+        agg_dict = {SLK: [min, max] for SLK in SLKs }
+    
+    #If an aggregation dictionary is provided to `summarise`, add the methods to the SLK method detailed in the previous step
+    if isinstance(summarise, dict):
+        agg_dict.update(summarise)
+    
+    new_data = new_data.groupby(['segment_id'] + idvars + lane + grouping).agg(agg_dict)
+    
+    new_data.columns = ["_".join(x) for x in new_data.columns]
+    new_data = new_data.rename(columns = {'SLK_min': 'START_SLK', 'SLK_max': 'END_SLK', 'true_SLK_min': 'START_TRUE', 'true_SLK_max': 'END_TRUE'})
+    
+    
+    #Turn into km by default
+    if as_km:
+        if 'START_SLK' in new_data.columns:
+            new_data['START_SLK'] = new_data['START_SLK']/1000
+            new_data['END_SLK'] = new_data['END_SLK']/1000
+        if 'START_TRUE' in new_data.columns:
+            new_data['START_TRUE'] = new_data['START_TRUE']/1000
+            new_data['END_TRUE'] = new_data['END_TRUE']/1000
+    
+    #Add the groupbys back to the columns
+    new_data = new_data.reset_index()
+    
+    #After the aggregations are done, the missing data can go back to being NaN
+    new_data.loc[:, grouping] = new_data.loc[:, grouping].replace(-1, np.nan)
+        
+    return new_data
+
+def interval_merge(left_df, right_df = None, join = 'left', idvars = None, start = None, end = None, start_true = None, end_true = None, idvars_left = None, idvars_right = None, start_left = None, start_right = None, start_true_left = None, start_true_right = None, end_left = None, end_right = None, end_true_left = None, end_true_right = None, grouping = None, summarise = True):
+    
+    
+    if idvars is not None:
+        idvars_left, idvars_right = idvars
+    if start is not None:
+        start_left, start_right = start
+    if end is not None:
+        end_left, end_right = end
+    if start_true is not None:
+        start_true_left, start_true_right = start_true
+    if end_true is not None:
+        end_true_left, end_true_right = end_true
+    
+    
+    #Create copies as to not change the original data
+    left_copy = left_df.copy()
+    
+    if right_df is not None:
+        right_copy = right_df.copy()
+    
+    #Define the interval columns for the datasets 
+    starts_left = [start for start in [start_left, start_true_left] if start != None]
+    ends_left = [end for end in [end_left, end_true_left] if end != None]
+    starts_right = [start for start in [start_right, start_true_right] if start != None]
+    ends_right = [end for end in [end_right, end_true_right] if end != None]
+    
+    #Convert SLKs to metres for easier operations
+    left_metres = left_copy.loc[:,starts_left + ends_left].apply(asmetres)
+    if right_df is not None:
+        right_metres = right_copy.loc[:, starts_right + ends_right].apply(asmetres)
+    #Find the greatest common divisor (GCD) of both of the dataframes to stretch into equal length segments
+    gcds = []
+    
+    #Find the gcd for all intervals
+    #left
+    for start, end in zip(starts_left, ends_left):
+        gcds.append(gcd_list(left_metres[end] - left_metres[start]))
+    #right    
+    for start, end in zip(starts_right, ends_right):
+        gcds.append(gcd_list(right_metres[end] - right_metres[start]))
+    #Find the minimum
+    gcd = min(gcds)
+    
+    #Stretch both dataframes by the GCD
+    
+    
+    #rename SLKs congruently
+    slk_dict = {start_right: 'START_SLK', start_true_right: 'START_TRUE', end_right: 'END_SLK', end_true_right: 'END_TRUE', start_left: 'START_SLK', start_true_left: 'START_TRUE', end_left: 'END_SLK', end_true_left: 'END_TRUE'}
+    
+    left_copy = left_copy.rename(columns = slk_dict)
+    right_copy = right_copy.rename(columns = slk_dict)
+    
+    #Don't include the missing parameters
+    for key in list(slk_dict.keys()):
+        if key == None:
+            slk_dict[key] = None
+            
+    #stretch    
+    left_stretched = stretch(left_copy, start = slk_dict[start_left], end = slk_dict[end_left], start_true = slk_dict[start_true_left], end_true = slk_dict[end_true_left], km = False)
+    
+    right_stretched = stretch(right_copy, start = slk_dict[start_right], end = slk_dict[end_right], start_true = slk_dict[start_true_right], end_true = slk_dict[end_true_right], km = False)
+    
+    #index by mutual ID variables and stretched SLKs
+    
+    id_len = min(len(idvars_left),len(idvars_right))#max number of mutual IDs
+    #Rename the right ID Vars to be congruent with the left 
+    id_dict = dict(zip(idvars_right[0:id_len], idvars_left[0:id_len]))
+    right_stretched = right_stretched.rename(columns = id_dict)
+    idvars = idvars_left[0:id_len] #Now that they have the same names, the mutual ID variables are the same as the parameter idvars_left to the maximum mutual length of the idvars 
+    left_stretched = left_stretched.set_index(idvars + [col for col in ['SLK', 'true_SLK'] if col in left_stretched.columns])
+    right_stretched = right_stretched.set_index(idvars + [col for col in ['SLK', 'true_SLK'] if col in right_stretched.columns])
+    
+    #join by index
+    joined = left_stretched.join(right_stretched, how = join)
+    joined = joined[~joined.index.duplicated(keep = 'first')].reset_index()
+    
+    #compact
+    segments = get_segments(joined, true_SLK = 'stretched_START_TRUE' if 'stretched_START_TRUE' in joined.columns else None, SLK = 'stretched_START_SLK' if 'stretched_START_SLK' in joined.columns else None, idvars = idvars, obs_length = gcd, grouping = grouping, km = False, as_km = True, summarise = summarise)
+    
+    return segments
+    
+def make_segments(data, start = None, end = None, start_true = None, end_true = None, max_segment = 100, min_segment = None):
+    
+    import numpy as np
+    
+    starts = [var for var in [start, start_true] if var is not None]
+    ends = [var for var in [end, end_true] if var is not None]
     
     new_data = data.copy() #Copy of the dataset
-    
-    #Describe the SLK_type methods
-    if SLK_type not in ['both', 'true', 'original']:
-        return print("`SLK_type` must be one of 'both', 'true', or 'original'.")
-    
-    SLKs = [var for var in original + true if var is not None]
-    
-    if SLK_type == 'both' and None in SLKs:
-        return print("All SLK variables must be declared when using `SLK_type` 'both'.")
-    
-    if SLK_type == 'original':
-        if any(var in true for var in SLKs):
-            print("'True' SLK variables will be ignored when using `SLK_type` 'original'.")
-            new_data.drop([true_start, true_end], axis = 1, errors = 'ignore')
 
-    if SLK_type == 'true': 
-        if any(var in original for var in SLKs):
-            print("'Original' SLK variables will be ignored when using `SLK_type` 'true'.")
-            new_data.drop([start, end], axis = 1, errors = 'ignore')     
+    SLKs = [slk for slk in starts + ends if slk is not None]
     
     new_data = new_data.dropna(thresh = 2)  #drop any row that does not contain at least two non-missing values.
-
+    
     #Change SLK variables to 32 bit integers of metres to avoid the issue with calculations on floating numbers
     for var in SLKs:
         new_data[var] = asmetres(new_data[var])
+
+    new_data['Length'] = new_data[ends[0]] - new_data[starts[0]]
+
+    if bool(min_segment):
+        new_data['start_end'] = np.where(new_data['Length'] <= max_segment, True, False)
     
-    #Reshape the data into size specified in 'obs_length'
+    #Reshape the data into size specified in 'max_segment'
     new_data = new_data.reindex(new_data.index.repeat(np.ceil((new_data[ends[0]] - new_data[starts[0]])/max_segment))) #reindex by the number of intervals of specified length between the start and the end.
-    for var in starts:
-    #Increment the rows by the segment size
-        new_data[var] = (new_data[var] + new_data.groupby(level=0).cumcount()*max_segment) 
+    
     for start_,end_ in zip(starts, ends):
+    #Increment the start rows by the segment size
+        new_data[start_] = (new_data[start_] + new_data.groupby(level=0).cumcount()*max_segment) 
     #End SLKs are equal to the lead Start SLKS except where the segment ends
         new_data[end_] = np.where((new_data[start_].shift(-1) - new_data[start_]) == max_segment, new_data[start_].shift(-1), new_data[end_])
+
+    #Check for minimum segment lengths
+    if bool(min_segment):
+        for start_,end_ in zip(starts, ends):
+            #where the difference between the `end` and `start` is less than the minimum segment size and isn't a start_end, subtract the difference from the `start` and set the same value as the previous `end`
+            new_data['too_short'] = np.where(((new_data[end_] - new_data[start_]) < min_segment) & (new_data['start_end'] == False), True, False)
+            new_data[start_] = np.where(new_data['too_short'] == True, new_data[end_] - min_segment,  new_data[start_])
+            new_data[end_] = np.where(new_data['too_short'].shift(-1) == True, new_data[start_].shift(-1), new_data[end_])
+            #Drop the boolean columns
+            new_data = new_data.drop(['start_end', 'too_short'], axis = 1) 
+   
     
     #Convert SLK variables back to km
     for var in SLKs:
         new_data[var] = new_data[var]/1000
-        
+
+    #recalculate length   
+    new_data['Length'] = new_data[ends[0]] - new_data[starts[0]]
     new_data = new_data.reset_index(drop = True)
 
     return new_data
@@ -211,8 +394,8 @@ def merge(left, rights = [], by = ['road_no', 'cway'], start_names = [], end_nam
     end_names = end_names + ['end', 'end slk', 'slk end', 'slk to', 'to slk', 'end_slk', 'slk_end', 'to_slk', 'slk_to', 'to']
 
     if slk_true:
-        start_names = start_names + ['start true', 'start_true','true start', 'true_start', 'true start slk', 'true slk start', 'true from slk', 'true slk from', 'true_start_slk', 'true_slk_start', 'true_from_slk', 'true_slk_from', 'true_from', 'true_start', 'trueslk_from', 'trues']
-        end_names = end_names + ['end true', 'end_true','true end', 'true_end','true end slk', 'true slk end', 'true slk to', 'true to slk', 'ture_end_slk', 'true_slk_end', 'true_to_slk', 'true_slk_to', 'true to', 'true_to', 'trueslk_to', 'truee']                             
+        start_names = start_names + ['start true', 'start_true','true start', 'start_true', 'true start slk', 'true slk start', 'true from slk', 'true slk from', 'start_true_slk', 'true_slk_start', 'true_from_slk', 'true_slk_from', 'true_from', 'start_true', 'trueslk_from', 'trues']
+        end_names = end_names + ['end true', 'end_true','true end', 'end_true','true end slk', 'true slk end', 'true slk to', 'true to slk', 'end_true_slk', 'true_slk_end', 'true_to_slk', 'true_slk_to', 'true to', 'true_to', 'trueslk_to', 'truee']                             
     
     road_no_names = ['road_no', 'road_number', 'road no', 'road number', 'road'] 
     
@@ -343,6 +526,8 @@ def widen_by_lane(data, start, end, ids, grouping, xsp = 'xsp', side = 'side', r
         compact_df = compact(pivoted_df, SLK = 'start', lanes = lanes, obs_length = stretch_size, idvars = ids + [side],  grouping = compact_by)
     
     #5: Make into segment lengths of choice
-    final_df = make_segments(compact_df, SLK_type = "true", true_start = "startstart", true_end = "startend", max_segment = max_segment)
+    final_df = make_segments(compact_df, SLK_type = "true", start_true = "startstart", end_true = "startend", max_segment = max_segment)
     
     return final_df
+
+    
