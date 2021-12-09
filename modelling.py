@@ -1,4 +1,3 @@
-
 #From a start point, generate a deterioration curve based on a given rate and intervals to compound by.
 def deteriorate(initial, rate,  final = False, n_periods = False, n_intervals = 1, percentage = False):
     
@@ -24,7 +23,24 @@ def deteriorate(initial, rate,  final = False, n_periods = False, n_intervals = 
             val = l[-1]*(1 - interval_rate)
             l.append(val)
 
-
     return l
 
     
+#define aggregation methods
+def most_common(x):
+    if len(x.mode()):
+        return x.mode()[0] 
+    else:
+        return np.nan
+
+def first(x):
+    return x.iloc[0]  
+
+def q75(x):
+    return x.quantile(0.75)
+
+def q90(x):
+    return x.quantile(0.90)
+
+def q95(x):
+    return x.quantile(0.95)
