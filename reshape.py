@@ -132,13 +132,14 @@ def compact(data, true_SLK = None, SLK = None, lane = None, obs_length = 10, idv
     
     return compact_data
 
-def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = None, start_true = None, end_true = None, lane = None, grouping = True, stretched = False, summarise = True, km = False, as_km = True):
+def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = None, start_true = None, end_true = None, lane = None, grouping = True, summarise = True, km = True, as_km = True):
     
     import numpy as np
     
     #Stretch the dataframe into equal length segments if is not already
-    if stretched:
+    if bool(SLK or true_SLK):
         new_data = data.copy()
+        
     else:
         new_data = stretch(data, start = start, end = end, start_true = start_true, end_true = end_true, km = False)
         if bool(start):
@@ -172,10 +173,8 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     #Treat all NAs the same
     new_data.loc[:, grouping] = new_data.loc[:, grouping].fillna(-1)
     
-    #Create a column that is a concatenation of all the columns in the grouping
-    
     #If both SLK and true SLK are declared, create a column equal to the diference between the two, in order to check for Points of Equation by changes in the variable
-    if true_SLK is not None and SLK is not None:
+    if bool(true_SLK and SLK):
         new_data['slk_diff'] = new_data[true_SLK] - new_data[SLK]
         new_data.insert(0, "groupkey", new_data.groupby(grouping + idvars + lane + ['slk_diff']).ngroup())
     else:
@@ -219,35 +218,36 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     
     
     #Turn into km by default
-    if as_km:
-        if 'START_SLK' in new_data.columns:
-            new_data['START_SLK'] = new_data['START_SLK']/1000
-            new_data['END_SLK'] = new_data['END_SLK']/1000
-        if 'START_TRUE' in new_data.columns:
-            new_data['START_TRUE'] = new_data['START_TRUE']/1000
-            new_data['END_TRUE'] = new_data['END_TRUE']/1000
+    if 'START_SLK' in new_data.columns:
+        new_data['START_SLK'] = new_data['START_SLK']/1000
+        new_data['END_SLK'] = new_data['END_SLK']/1000
+    if 'START_TRUE' in new_data.columns:
+        new_data['START_TRUE'] = new_data['START_TRUE']/1000
+        new_data['END_TRUE'] = new_data['END_TRUE']/1000
     
     #Add the groupbys back to the columns
     new_data = new_data.reset_index()
     
     #After the aggregations are done, the missing data can go back to being NaN
     new_data.loc[:, grouping] = new_data.loc[:, grouping].replace(-1, np.nan)
-        
+    new_data = new_data.sort_values([i for i in idvars + ['START_SLK', 'START_TRUE'] if i in new_data.columns]).reset_index(drop = True)
+    new_data['segment_id'] = [i for i in range(len(new_data))]
+
     return new_data
 
-def interval_merge(left_df, right_df = None, join = 'left', idvars = None, start = None, end = None, start_true = None, end_true = None, idvars_left = None, idvars_right = None, start_left = None, start_right = None, start_true_left = None, start_true_right = None, end_left = None, end_right = None, end_true_left = None, end_true_right = None, grouping = None, summarise = True):
+def interval_merge(left_df, right_df = None, join = 'left', idvars = None, start = None, end = None, start_true = None, end_true = None, idvars_left = None, idvars_right = None, start_left = None, start_right = None, start_true_left = None, start_true_right = None, end_left = None, end_right = None, end_true_left = None, end_true_right = None, grouping = True, summarise = True, km = True):
     
     
     if idvars is not None:
-        idvars_left, idvars_right = idvars
+        idvars_left, idvars_right = idvars, idvars
     if start is not None:
-        start_left, start_right = start
+        start_left, start_right = start, start
     if end is not None:
         end_left, end_right = end
     if start_true is not None:
-        start_true_left, start_true_right = start_true
+        start_true_left, start_true_right = start_true, start_true
     if end_true is not None:
-        end_true_left, end_true_right = end_true
+        end_true_left, end_true_right = end_true, end_true
     
     
     #Create copies as to not change the original data
@@ -262,13 +262,14 @@ def interval_merge(left_df, right_df = None, join = 'left', idvars = None, start
     starts_right = [start for start in [start_right, start_true_right] if start != None]
     ends_right = [end for end in [end_right, end_true_right] if end != None]
     
-    #Convert SLKs to metres for easier operations
-    left_metres = left_copy.loc[:,starts_left + ends_left].apply(asmetres)
-    if right_df is not None:
-        right_metres = right_copy.loc[:, starts_right + ends_right].apply(asmetres)
+    if km:
+        #Convert SLKs to metres for easier operations
+        left_metres = left_copy.loc[:,starts_left + ends_left].apply(asmetres)
+        if right_df is not None:
+            right_metres = right_copy.loc[:, starts_right + ends_right].apply(asmetres)
+    
     #Find the greatest common divisor (GCD) of both of the dataframes to stretch into equal length segments
     gcds = []
-    
     #Find the gcd for all intervals
     #left
     for start, end in zip(starts_left, ends_left):
@@ -313,11 +314,11 @@ def interval_merge(left_df, right_df = None, join = 'left', idvars = None, start
     joined = joined[~joined.index.duplicated(keep = 'first')].reset_index()
     
     #compact
-    segments = get_segments(joined, true_SLK = 'stretched_START_TRUE' if 'stretched_START_TRUE' in joined.columns else None, SLK = 'stretched_START_SLK' if 'stretched_START_SLK' in joined.columns else None, idvars = idvars, obs_length = gcd, grouping = grouping, km = False, as_km = True, summarise = summarise)
+    segments = get_segments(joined, true_SLK = 'true_SLK' if 'true_SLK' in joined.columns else None, SLK = 'SLK' if 'SLK' in joined.columns else None, idvars = idvars, grouping = grouping, km = False, as_km = True, summarise = summarise)
     
     return segments
     
-def make_segments(data, start = None, end = None, start_true = None, end_true = None, max_segment = 100, min_segment = None):
+def make_segments(data, start = None, end = None, start_true = None, end_true = None, max_segment = 100, split_ends = True):
     
     import numpy as np
     
@@ -336,7 +337,7 @@ def make_segments(data, start = None, end = None, start_true = None, end_true = 
 
     new_data['Length'] = new_data[ends[0]] - new_data[starts[0]]
 
-    if bool(min_segment):
+    if bool(split_ends):
         new_data['start_end'] = np.where(new_data['Length'] <= max_segment, True, False)
     
     #Reshape the data into size specified in 'max_segment'
@@ -349,16 +350,15 @@ def make_segments(data, start = None, end = None, start_true = None, end_true = 
         new_data[end_] = np.where((new_data[start_].shift(-1) - new_data[start_]) == max_segment, new_data[start_].shift(-1), new_data[end_])
 
     #Check for minimum segment lengths
-    if bool(min_segment):
+    if bool(split_ends):
         for start_,end_ in zip(starts, ends):
             #where the difference between the `end` and `start` is less than the minimum segment size and isn't a start_end, subtract the difference from the `start` and set the same value as the previous `end`
-            new_data['too_short'] = np.where(((new_data[end_] - new_data[start_]) < min_segment) & (new_data['start_end'] == False), True, False)
-            new_data[start_] = np.where(new_data['too_short'] == True, new_data[end_] - min_segment,  new_data[start_])
-            new_data[end_] = np.where(new_data['too_short'].shift(-1) == True, new_data[start_].shift(-1), new_data[end_])
+            new_data['too_short'] = np.where(((new_data[end_] - new_data[start_]) < max_segment) & (new_data['start_end'] == False), True, False)
+            new_data[end_] = np.where(new_data['too_short'].shift(-1) == True, (new_data[end_].shift(-1) + new_data[start_])/2, new_data[end_])
+            new_data[start_] = np.where(new_data['too_short'] == True, new_data[end_].shift(1),  new_data[start_])
             #Drop the boolean columns
             new_data = new_data.drop(['start_end', 'too_short'], axis = 1) 
    
-    
     #Convert SLK variables back to km
     for var in SLKs:
         new_data[var] = new_data[var]/1000

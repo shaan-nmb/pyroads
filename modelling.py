@@ -34,7 +34,10 @@ def most_common(x):
         return np.nan
 
 def first(x):
-    return x.iloc[0]  
+    return x.iloc[0]
+
+def last(x):
+    return x.iloc[-1]  
 
 def q75(x):
     return x.quantile(0.75)
