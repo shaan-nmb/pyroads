@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd 
 
 ##Deal with an SLK column as metres in integers to avoid the issue of calculating on floating numbers
-def asmetres(var):
+def as_metres(var):
 
     m = round(var*1000).astype(int)
 
@@ -24,9 +24,8 @@ def gcd_list(items):
     return result
 
 ##Turn each observation into sections of specified lengths
-def stretch(data, start = None, end = None, start_true = None, end_true = None, segment_size = 'GCD', keep_ranges = False, sort = None, km = True):
+def stretch(data, start = None, end = None, start_true = None, end_true = None, segment_size = 'GCD', keep_ranges = False, sort = None, as_km = True):
 
-    import numpy as np
     starts = [i for i in [start, start_true] if i is not None]
     ends = [i for i in [end, end_true] if i is not None]
     names = [v for k,v in zip([start, start_true], ['SLK', 'true_SLK']) if k is not None]
@@ -39,7 +38,7 @@ def stretch(data, start = None, end = None, start_true = None, end_true = None, 
         new_data =  new_data.sort_values(sort)
 
     #Change SLK variables to 32 bit integers of metres to avoid the issue with calculations on floating numbers
-    new_data[SLKs] = new_data[SLKs].apply(asmetres)
+    new_data[SLKs] = new_data[SLKs].apply(as_metres)
     
     if segment_size == 'GCD':
         lengths = new_data[ends[0]] - new_data[starts[0]]
@@ -51,7 +50,7 @@ def stretch(data, start = None, end = None, start_true = None, end_true = None, 
     #increment the start points by observation length
     for start_slk, end_slk, name in zip(starts, ends, names):
         new_data[name] = new_data[start_slk] +  new_data.groupby(level = 0).cumcount()*segment_size
-        if km:
+        if as_km:
                 new_data[name] = new_data[name]/1000               
         
     for start_slk, end_slk in zip(starts, ends):
@@ -78,8 +77,6 @@ def compact(data, true_SLK = None, SLK = None, lane = None, obs_length = 10, idv
     if grouping is None:
         grouping = [col for col in data if col not in idvars]
 
-    import numpy as np
-
     #Sort by all columns in grouping, then by true SLK, then by SLK
     if lane is None:
         lane = []
@@ -104,7 +101,7 @@ def compact(data, true_SLK = None, SLK = None, lane = None, obs_length = 10, idv
     #Change SLK variables to 32 bit integers of metres to avoid the issue with calculations on floating numbers
     if km:
         for SLK in SLKs:
-            new_data[SLK] = asmetres(new_data[SLK])
+            new_data[SLK] = as_metres(new_data[SLK])
 
     #Create lag and lead columns for SLK, true SLK, and the grouping key to check whether a new group has started
     for var in SLKs:
@@ -135,16 +132,13 @@ def compact(data, true_SLK = None, SLK = None, lane = None, obs_length = 10, idv
     
     return compact_data
 
-def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = None, start_true = None, end_true = None, lane = None, grouping = True, summarise = True, km = True, as_km = True):
-    
-    import numpy as np
-    
+def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = None, start_true = None, end_true = None, lane = None, grouping = True, summarise = True, as_km = True):
+
+    new_data = data.copy()
+
     #Stretch the dataframe into equal length segments if is not already
-    if bool(SLK or true_SLK):
-        new_data = data.copy()
-        
-    else:
-        new_data = stretch(data, start = start, end = end, start_true = start_true, end_true = end_true, km = False)
+    if not bool(SLK or true_SLK):
+        new_data = stretch(data, start = start, end = end, start_true = start_true, end_true = end_true, as_km = False)
         if bool(start):
             SLK = 'SLK'
         if bool(start_true):
@@ -152,12 +146,7 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     
     #Detect whether operating on SLK, True SLK, or both.
     SLKs = [slk for slk in [true_SLK, SLK] if slk is not None]
-    
-    #If the input data is in kilometres, change SLK variables to 32 bit integers of metres to avoid the issue with calculations on floating numbers
-    if km:
-        for SLK in SLKs:
-            new_data[SLK] = asmetres(new_data[SLK])
-    
+
     #Calculate the observation length 
     obs_length = new_data.loc[1, SLKs[0]] - new_data.loc[0, SLKs[0]]
     
@@ -267,9 +256,9 @@ def interval_merge(left_df, right_df = None, join = 'left', idvars = None, start
     
     if km:
         #Convert SLKs to metres for easier operations
-        left_metres = left_copy.loc[:,starts_left + ends_left].apply(asmetres)
+        left_metres = left_copy.loc[:,starts_left + ends_left].apply(as_metres)
         if right_df is not None:
-            right_metres = right_copy.loc[:, starts_right + ends_right].apply(asmetres)
+            right_metres = right_copy.loc[:, starts_right + ends_right].apply(as_metres)
     
     #Find the greatest common divisor (GCD) of both of the dataframes to stretch into equal length segments
     gcds = []
@@ -298,9 +287,9 @@ def interval_merge(left_df, right_df = None, join = 'left', idvars = None, start
             slk_dict[key] = None
             
     #stretch    
-    left_stretched = stretch(left_copy, start = slk_dict[start_left], end = slk_dict[end_left], start_true = slk_dict[start_true_left], end_true = slk_dict[end_true_left], km = False)
+    left_stretched = stretch(left_copy, start = slk_dict[start_left], end = slk_dict[end_left], start_true = slk_dict[start_true_left], end_true = slk_dict[end_true_left], as_km = False)
     
-    right_stretched = stretch(right_copy, start = slk_dict[start_right], end = slk_dict[end_right], start_true = slk_dict[start_true_right], end_true = slk_dict[end_true_right], km = False)
+    right_stretched = stretch(right_copy, start = slk_dict[start_right], end = slk_dict[end_right], start_true = slk_dict[start_true_right], end_true = slk_dict[end_true_right], as_km = False)
     
     #index by mutual ID variables and stretched SLKs
     
@@ -317,16 +306,14 @@ def interval_merge(left_df, right_df = None, join = 'left', idvars = None, start
     joined = joined[~joined.index.duplicated(keep = 'first')].reset_index()
     
     #compact
-    segments = get_segments(joined, true_SLK = 'true_SLK' if 'true_SLK' in joined.columns else None, SLK = 'SLK' if 'SLK' in joined.columns else None, idvars = idvars, grouping = grouping, km = False, as_km = True, summarise = summarise)
+    segments = get_segments(joined, true_SLK = 'true_SLK' if 'true_SLK' in joined.columns else None, SLK = 'SLK' if 'SLK' in joined.columns else None, idvars = idvars, grouping = grouping, as_km = True, summarise = summarise)
     
     return segments
     
 def make_segments(data, start = None, end = None, start_true = None, end_true = None, max_segment = 100, split_ends = True):
     
-    import numpy as np
-    
-    starts = [var for var in [start, start_true] if var is not None]
-    ends = [var for var in [end, end_true] if var is not None]
+    starts = [var for var in [start, start_true] if bool(var)]
+    ends = [var for var in [end, end_true] if bool(var)]
     
     new_data = data.copy() #Copy of the dataset
 
@@ -336,7 +323,7 @@ def make_segments(data, start = None, end = None, start_true = None, end_true = 
     
     #Change SLK variables to 32 bit integers of metres to avoid the issue with calculations on floating numbers
     for var in SLKs:
-        new_data[var] = asmetres(new_data[var])
+        new_data[var] = as_metres(new_data[var])
 
     new_data['Length'] = new_data[ends[0]] - new_data[starts[0]]
 
@@ -420,7 +407,7 @@ def merge(left, rights = [], by = ['road_no', 'cway'], start_names = [], end_nam
         rights_start_end = df[['start_slk', 'end_slk']]
         start_and_end = pd.concat([start_and_end, rights_start_end])
         
-    gcd = gcd_list(asmetres(start_and_end.iloc[:,1]) - asmetres(start_and_end.iloc[:,0]))
+    gcd = gcd_list(as_metres(start_and_end.iloc[:,1]) - as_metres(start_and_end.iloc[:,0]))
     
     #stretch by the greatest common divisor    
     left_copy = stretch(left_copy, starts = ['start_slk'], ends = ['end_slk'], segment_size = gcd, keep_ranges = True)
@@ -461,11 +448,11 @@ def cway_to_side(data, name = None):
     new_data = pd.concat([data_right, data_left])
     return new_data.reset_index(drop = True)
 
-def hsd_to_side(data, side_name = 'side'):
+def hsd_to_side(data, cway_name = None, side_name = 'side'):
     
     import numpy as np
 
-    new_data = cway_to_side(data)
+    new_data = cway_to_side(data, name = cway_name)
     new_data.loc[:,'Rutt'] = np.where(new_data[side_name] == 'L', new_data.filter(regex = "^L_RUT").mean(axis = 1), new_data.filter(regex = "^R_RUT").mean(axis = 1))
     new_data.loc[:,'Rough'] = np.where(new_data[side_name] == 'L', new_data.filter(regex = "^L_LANE_IRI").mean(axis = 1), new_data.filter(regex = "^R_LANE_IRI").mean(axis = 1))
     new_data = new_data.loc[:,[col for col in new_data.columns if col not in new_data.filter(regex = "^(L|R)_").columns]]
@@ -500,7 +487,7 @@ def widen_by_lane(data, start, end, ids, grouping, xsp = 'xsp', side = 'side', r
     side_df = pd.concat([prep_df_l, prep_df_r]) #1.3 Concatenate the split frames together
     
     #2: Stretch dataframe into equal segment lengths
-    stretch_size = gcd_list(asmetres(side_df[end]) - asmetres(side_df[start])) #Size by which to stretch into equal segments
+    stretch_size = gcd_list(as_metres(side_df[end]) - as_metres(side_df[start])) #Size by which to stretch into equal segments
     stretched_df = stretch(side_df, starts = [start], ends = [end], max_segment = stretch_size, sort = ids + [side, start])
     
     #3: Pivot frame on ID variables by xsp for selected grouping columns
