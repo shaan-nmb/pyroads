@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd 
+
 ##Determine whether the section is metro or rural
 def rurality(data, RA, road_no, SLK = "SLK") :
     import numpy as np

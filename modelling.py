@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd 
+
 #From a start point, generate a deterioration curve based on a given rate and intervals to compound by.
 def deteriorate(initial, rate,  final = False, n_periods = False, n_intervals = 1, percentage = False):
     
@@ -27,12 +30,12 @@ def deteriorate(initial, rate,  final = False, n_periods = False, n_intervals = 
 
     
 #define aggregation methods
-def most_common(x):
+def most(x):
     if len(x.mode()):
         return x.mode()[0] 
     else:
         return np.nan
-
+        
 def first(x):
     return x.iloc[0]
 

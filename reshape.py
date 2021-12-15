@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd 
+
 ##Deal with an SLK column as metres in integers to avoid the issue of calculating on floating numbers
 def asmetres(var):
 
@@ -204,7 +207,7 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     #Summarise the data by `segment_id`
     
     #By default, summarise the SLK into min and max columns, representing Start and End SLK respectively
-    if summarise:
+    if bool(summarise):
         agg_dict = {SLK: [min, max] for SLK in SLKs }
     
     #If an aggregation dictionary is provided to `summarise`, add the methods to the SLK method detailed in the previous step
