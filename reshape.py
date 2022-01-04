@@ -61,9 +61,10 @@ def stretch(data, start = None, end = None, start_true = None, end_true = None, 
 
     #Drop the variables no longer required
     if keep_ranges:
-        for SLK in SLKs:
-            if as_km:
-                new_data[SLK] = new_data[SLK]/1000        
+        if as_km:
+            for SLK in SLKs:
+                new_data[SLK] = new_data[SLK]/1000 
+            new_data.rename(columns = {"SLK" : "SLK_m", "true_SLK": "true_SLK_m"})           
     else:
         new_data = new_data.drop([SLK for SLK in SLKs], axis = 1)
         new_data = new_data.reset_index(drop = True)
