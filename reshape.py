@@ -92,10 +92,10 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     #Treat `lane` as empty list if not declared
     lane = []
     #By default, group by all columns other than the `idvars` (ID variables) 
-    if grouping is True:
+    if grouping == True:
         grouping = [col for col in new_data if col not in idvars and col not in SLKs]
     #If grouping is False, the variable is an empty list
-    if grouping is False:
+    if grouping == False:
         grouping = []
 
     #Sort by all columns in grouping, then by true SLK, then by SLK, then lane if declared
@@ -170,14 +170,14 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
 
     return new_data
 
-def interval_merge(left_df, right_df = None, join = 'left', idvars = None, start = None, end = None, start_true = None, end_true = None, idvars_left = None, idvars_right = None, start_left = None, start_right = None, start_true_left = None, start_true_right = None, end_left = None, end_right = None, end_true_left = None, end_true_right = None, grouping = True, summarise = True, km = True, keep_ranges = False):
+def interval_merge(left_df, right_df = None, idvars = None, start = None, end = None, start_true = None, end_true = None, idvars_left = None, idvars_right = None, start_left = None, start_right = None, start_true_left = None, start_true_right = None, end_left = None, end_right = None, end_true_left = None, end_true_right = None, grouping = True, summarise = True, km = True, keep_ranges = False):
     
     if idvars is not None:
         idvars_left, idvars_right = idvars, idvars
     if start is not None:
         start_left, start_right = start, start
     if end is not None:
-        end_left, end_right = end
+        end_left, end_right = end, end
     if start_true is not None:
         start_true_left, start_true_right = start_true, start_true
     if end_true is not None:
@@ -218,6 +218,7 @@ def interval_merge(left_df, right_df = None, join = 'left', idvars = None, start
     #rename SLKs congruently
     slk_dict = {start_right: 'START_SLK', start_true_right: 'START_TRUE', end_right: 'END_SLK', end_true_right: 'END_TRUE', start_left: 'START_SLK', start_true_left: 'START_TRUE', end_left: 'END_SLK', end_true_left: 'END_TRUE'}
     
+
     left_copy = left_copy.rename(columns = slk_dict)
     right_copy = right_copy.rename(columns = slk_dict)
     
@@ -242,16 +243,32 @@ def interval_merge(left_df, right_df = None, join = 'left', idvars = None, start
     right_stretched = right_stretched.set_index(idvars + [col for col in ['SLK', 'true_SLK'] if col in right_stretched.columns])
     
     #join by index
-    joined = left_stretched.join(right_stretched, how = join)
+    joined = left_stretched.join(right_stretched, how = 'left')
     joined = joined[~joined.index.duplicated(keep = 'first')].reset_index()
-    
-    #compact
-    if keep_ranges:
-        segments = get_segments(joined, true_SLK = 'true_SLK' if 'true_SLK' in joined.columns else None, SLK = 'SLK' if 'SLK' in joined.columns else None, idvars = idvars, grouping = grouping + [i for i in [start_left, start_true_left, end_left, end_true_left] if bool(i)], as_km = True, summarise = summarise)
-    else:
-        segments = get_segments(joined, true_SLK = 'true_SLK' if 'true_SLK' in joined.columns else None, SLK = 'SLK' if 'SLK' in joined.columns else None, idvars = idvars, grouping = grouping, as_km = True, summarise = summarise)
 
+    if keep_ranges:
+        #change the name of the original SLKs before creating segments to avoid confusion
+        slks = [i for i in list(slk_dict.values()) if i in joined.columns]
+        joined.columns = ['org_' + col if col in slks else col for col in joined.columns]
+    else:
+        slks = []
+
+    for col in [col for col in joined.columns if 'org' in col]:
+        joined[col] /= 1000
+
+    if grouping == True:
+        grouping = [col for col in joined.columns if col not in ['true_SLK', 'SLK'] + idvars]
+    else:
+        grouping = []
+
+    #compact
+    segments = get_segments(joined, true_SLK = 'true_SLK' if 'true_SLK' in joined.columns else None, SLK = 'SLK' if 'SLK' in joined.columns else None, idvars = idvars, grouping = grouping, as_km = True, summarise = summarise)
     
+    #Drop the duplicates of the SLK columns caused by `get_segments` if the original ranges are being used for the segments
+    if keep_ranges:
+        segments = segments.drop(slks, axis = 1)
+        segments.columns = [col[4:] if col[:4]== "org_" else col for col in segments.columns]
+
     return segments
     
 def make_segments(data, start = None, end = None, start_true = None, end_true = None, max_segment = 100, split_ends = True):
