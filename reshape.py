@@ -93,7 +93,9 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     lane = []
     #By default, group by all columns other than the `idvars` (ID variables) 
     if grouping == True:
-        grouping = [col for col in new_data if col not in idvars and col not in SLKs]
+        grouping = [col for col in new_data.columns() if col not in idvars and col not in SLKs]
+        if isinstance(summarise, dict):
+            grouping = [col for col in new_data.columns() if col not in idvars and col not in SLKs and col not in list(summarise.keys())]
     #If grouping is False, the variable is an empty list
     if grouping == False:
         grouping = []
@@ -256,8 +258,11 @@ def interval_merge(left_df, right_df = None, idvars = None, start = None, end = 
     for col in [col for col in joined.columns if 'org' in col]:
         joined[col] /= 1000
 
-    if grouping == True:
+    if bool(grouping) == True:
         grouping = [col for col in joined.columns if col not in ['true_SLK', 'SLK'] + idvars]
+        if isinstance(summarise, dict):
+            grouping = [col for col in joined.columns if col not in ['true_SLK', 'SLK'] + idvars + list(summarise.keys())]
+
     else:
         grouping = []
 
