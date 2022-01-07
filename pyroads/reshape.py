@@ -24,7 +24,7 @@ def gcd_list(items):
     return result
 
 ##Turn each observation into sections of specified lengths
-def stretch(data, start = None, end = None, start_true = None, end_true = None, segment_size = 'GCD', use_ranges = False, sort = None, as_km = True, keep_ranges = False):
+def stretch(data, start = None, end = None, start_true = None, end_true = None, segment_size = 'GCD', sort = None, as_km = True, keep_ranges = False):
 
     starts = [i for i in [start, start_true] if i is not None]
     ends = [i for i in [end, end_true] if i is not None]
@@ -40,9 +40,15 @@ def stretch(data, start = None, end = None, start_true = None, end_true = None, 
     #Change SLK variables to 32 bit integers of metres to avoid the issue with calculations on floating numbers
     new_data[SLKs] = new_data[SLKs].apply(as_metres)
     
+    lengths = new_data[ends[0]] - new_data[starts[0]]
+    gcd = gcd_list(lengths)
+
     if segment_size == 'GCD':
-        lengths = new_data[ends[0]] - new_data[starts[0]]
-        segment_size = gcd_list(lengths)
+        segment_size = gcd
+
+    if segment_size <= gcd:
+        segment_size = gcd
+        print('`segment_size` is too large. Defaulting to GCD.')
         
     #Reshape the data into size specified in 'obs_length'
     new_data = new_data.reindex(new_data.index.repeat(np.ceil((new_data[ends[0]] - new_data[starts[0]])/segment_size))) #reindex by the number of intervals of specified length between the start and the end.
