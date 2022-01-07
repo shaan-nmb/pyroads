@@ -6,6 +6,6 @@ setup(
     packages = find_packages(),
     description = "For analysis of road asset data.",
     url = "https://github.com/shaan-nmb/pyroads",
-    requires= ['pandas', 'numpy'],
+    install_requires= ['pandas', 'numpy'],
     author = 'Shaan Ciantar'
 )
