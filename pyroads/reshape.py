@@ -274,7 +274,7 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
 
     return segments
     
-def make_segments(data, start = None, end = None, start_true = None, end_true = None, max_segment = 100, split_ends = True):
+def make_segments(data, start = None, end = None, start_true = None, end_true = None, max_segment = 100, split_ends = True, as_km = True):
     
     starts = [var for var in [start, start_true] if bool(var)]
     ends = [var for var in [end, end_true] if bool(var)]
@@ -313,9 +313,10 @@ def make_segments(data, start = None, end = None, start_true = None, end_true = 
             #Drop the boolean columns
             new_data = new_data.drop(['start_end', 'too_short'], axis = 1) 
    
-    #Convert SLK variables back to km
-    for var in SLKs:
-        new_data[var] = new_data[var]/1000
+    if as_km:
+        #Convert SLK variables back to km
+        for var in SLKs:
+            new_data[var] = new_data[var]/1000
 
     #recalculate length   
     new_data['Length'] = new_data[ends[0]] - new_data[starts[0]]
