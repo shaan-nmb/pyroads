@@ -48,7 +48,7 @@ def stretch(data, start = None, end = None, start_true = None, end_true = None, 
 
     if segment_size <= gcd:
         segment_size = gcd
-        print('`segment_size` is too large. Defaulting to GCD.')
+        print(f'`segment_size` is too large. Defaulting to the GCD, {gcd}.')
         
     #Reshape the data into size specified in 'obs_length'
     new_data = new_data.reindex(new_data.index.repeat(np.ceil((new_data[ends[0]] - new_data[starts[0]])/segment_size))) #reindex by the number of intervals of specified length between the start and the end.
