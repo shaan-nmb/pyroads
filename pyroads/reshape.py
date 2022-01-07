@@ -172,7 +172,7 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
 
     return new_data
 
-def interval_merge(left_df, right_df = None, idvars = None, start = None, end = None, start_true = None, end_true = None, idvars_left = None, idvars_right = None, start_left = None, start_right = None, start_true_left = None, start_true_right = None, end_left = None, end_right = None, end_true_left = None, end_true_right = None, grouping = True, summarise = True, km = True, use_ranges = True):
+def interval_merge(left_df, right_df, idvars = None, start = None, end = None, start_true = None, end_true = None, idvars_left = None, idvars_right = None, start_left = None, start_right = None, start_true_left = None, start_true_right = None, end_left = None, end_right = None, end_true_left = None, end_true_right = None, grouping = True, summarise = True, km = True, use_ranges = True):
     
     if idvars is not None:
         idvars_left, idvars_right = idvars, idvars
@@ -188,10 +188,8 @@ def interval_merge(left_df, right_df = None, idvars = None, start = None, end = 
     
     #Create copies as to not change the original data
     left_copy = left_df.copy()
-    
-    if right_df is not None:
-        right_copy = right_df.copy()
-    
+    right_copy = right_df.copy()
+
     #Define the interval columns for the datasets 
     starts_left = [start for start in [start_left, start_true_left] if start != None]
     ends_left = [end for end in [end_left, end_true_left] if end != None]
@@ -201,11 +199,11 @@ def interval_merge(left_df, right_df = None, idvars = None, start = None, end = 
     if km:
         #Convert SLKs to metres for easier operations
         left_metres = left_copy.loc[:,starts_left + ends_left].apply(as_metres)
-        if right_df is not None:
-            right_metres = right_copy.loc[:, starts_right + ends_right].apply(as_metres)
+        right_metres = right_copy.loc[:, starts_right + ends_right].apply(as_metres)
     
     #Find the greatest common divisor (GCD) of both of the dataframes in order to stretch into equal length segments
     gcds = []
+
     #Find the gcd for all start-end pairs
     #left
     for start, end in zip(starts_left, ends_left):

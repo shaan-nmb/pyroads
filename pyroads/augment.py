@@ -12,24 +12,6 @@ def rurality(data, RA, road_no, SLK = "SLK") :
     ((data[SLK].astype(int) >= 18.54) & data[road_no] == 'H009'), 'Rural', 'Metro')
     return regionType
 
-##Assign a natural key based on key variables
-def natural_key(data, SLK = None, ID_name = "NATURAL_KEY", true_SLK = None, key_vars = []):
-
-    #Create a natural key based on SLK and ID variables
-    new_data = data.copy()
-    new_data.insert(0, ID_name, "")
-    for var in key_vars +[SLK, true_SLK]:
-        if var is not None:
-            new_data[ID_name] += new_data[var].astype(str) + '-'
-
-    return new_data
-
-##Function that allows one to add columns to a dataset from one with a shared natural key.  
-def concat_cols(left, right, key = "NATURAL_KEY", new_cols = []):
-    new_cols.append(key)
-    concat_data = left.copy().merge(right[new_cols], how = 'left', on = key, suffixes = ('','_right'))
-    return concat_data
-
 def surf_type(data, old_col, method = "short"):
     surf_id = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
     full = ["Asphalt Dense Graded", "Asphalt Intersection Mix", "Asphalt Open Graded", "Concrete", "Paving", "Primer Seal", "Rubberised Seal", "Single Seal", "Slurry Seal", "Two Coat Seal", "Asphalt Sotne Mastic", "Asphalt Open Graded on Dense Graded", "Asphalt Gap Graded Rubberised (GGAR)"]
@@ -104,7 +86,7 @@ def route_change(x, method = "new"):
     route_no = a.map(route_dict) 
     return route_no
     
-def route_description(x, method = "new"):
+def route_description(x, format = "new"):
     
     old_routes = [1.1, 2.1, 3.1, 2.2, 5.1, 6.1, 7.1, 8.1, 9.1, 10.1, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0]
     new_routes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
