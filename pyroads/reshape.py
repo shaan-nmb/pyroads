@@ -24,7 +24,7 @@ def gcd_list(items):
     return result
 
 ##Turn each observation into sections of specified lengths
-def stretch(data, start = None, end = None, start_true = None, end_true = None, segment_size = 'GCD', use_ranges = False, sort = None, as_km = True):
+def stretch(data, start = None, end = None, start_true = None, end_true = None, segment_size = 'GCD', use_ranges = False, sort = None, as_km = True, keep_ranges = False):
 
     starts = [i for i in [start, start_true] if i is not None]
     ends = [i for i in [end, end_true] if i is not None]
@@ -99,6 +99,9 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     #If grouping is False, the variable is an empty list
     if grouping == False:
         grouping = []
+    #Treat grouping as list if a single label is given
+    if isinstance(grouping, list) and len(grouping) == 1:
+        grouping = [grouping]
 
     #Sort by all columns in grouping, then by true SLK, then by SLK, then lane if declared
     new_data = new_data.sort_values(idvars + SLKs + lane).reset_index(drop = True)
