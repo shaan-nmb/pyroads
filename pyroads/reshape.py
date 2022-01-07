@@ -24,7 +24,7 @@ def gcd_list(items):
     return result
 
 ##Turn each observation into sections of specified lengths
-def stretch(data, start = None, end = None, start_true = None, end_true = None, segment_size = 'GCD', keep_ranges = False, sort = None, as_km = True):
+def stretch(data, start = None, end = None, start_true = None, end_true = None, segment_size = 'GCD', use_ranges = False, sort = None, as_km = True):
 
     starts = [i for i in [start, start_true] if i is not None]
     ends = [i for i in [end, end_true] if i is not None]
@@ -172,7 +172,7 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
 
     return new_data
 
-def interval_merge(left_df, right_df = None, idvars = None, start = None, end = None, start_true = None, end_true = None, idvars_left = None, idvars_right = None, start_left = None, start_right = None, start_true_left = None, start_true_right = None, end_left = None, end_right = None, end_true_left = None, end_true_right = None, grouping = True, summarise = True, km = True, keep_ranges = False):
+def interval_merge(left_df, right_df = None, idvars = None, start = None, end = None, start_true = None, end_true = None, idvars_left = None, idvars_right = None, start_left = None, start_right = None, start_true_left = None, start_true_right = None, end_left = None, end_right = None, end_true_left = None, end_true_right = None, grouping = True, summarise = True, km = True, use_ranges = True):
     
     if idvars is not None:
         idvars_left, idvars_right = idvars, idvars
@@ -230,7 +230,7 @@ def interval_merge(left_df, right_df = None, idvars = None, start = None, end = 
             slk_dict[key] = None
             
     #Stretch both dataframes by the GCD   
-    left_stretched = stretch(left_copy, start = slk_dict[start_left], end = slk_dict[end_left], start_true = slk_dict[start_true_left], end_true = slk_dict[end_true_left], as_km = False, keep_ranges = keep_ranges)
+    left_stretched = stretch(left_copy, start = slk_dict[start_left], end = slk_dict[end_left], start_true = slk_dict[start_true_left], end_true = slk_dict[end_true_left], as_km = False, keep_ranges = use_ranges)
     
     right_stretched = stretch(right_copy, start = slk_dict[start_right], end = slk_dict[end_right], start_true = slk_dict[start_true_right], end_true = slk_dict[end_true_right], as_km = False)
     
@@ -248,7 +248,7 @@ def interval_merge(left_df, right_df = None, idvars = None, start = None, end = 
     joined = left_stretched.join(right_stretched, how = 'left')
     joined = joined[~joined.index.duplicated(keep = 'first')].reset_index()
 
-    if keep_ranges:
+    if use_ranges:
         #change the name of the original SLKs before creating segments to avoid confusion
         slks = [i for i in list(slk_dict.values()) if i in joined.columns]
         joined.columns = ['org_' + col if col in slks else col for col in joined.columns]
@@ -270,7 +270,7 @@ def interval_merge(left_df, right_df = None, idvars = None, start = None, end = 
     segments = get_segments(joined, true_SLK = 'true_SLK' if 'true_SLK' in joined.columns else None, SLK = 'SLK' if 'SLK' in joined.columns else None, idvars = idvars, grouping = grouping, as_km = True, summarise = summarise)
     
     #Drop the duplicates of the SLK columns caused by `get_segments` if the original ranges are being used for the segments
-    if keep_ranges:
+    if use_ranges:
         segments = segments.drop(slks, axis = 1)
         segments.columns = [col[4:] if col[:4]== "org_" else col for col in segments.columns]
 
