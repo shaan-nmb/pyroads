@@ -48,7 +48,7 @@ def stretch(data, start = None, end = None, start_true = None, end_true = None, 
 
     if segment_size > gcd:
         segment_size = gcd
-        print(f'`segment_size` is too large. Defaulting to the GCD, {gcd}.')
+        print(f'`segment_size` is too large. Defaulting to the GCD, of {gcd}m.')
         
     #Reshape the data into size specified in 'obs_length'
     new_data = new_data.reindex(new_data.index.repeat(np.ceil((new_data[ends[0]] - new_data[starts[0]])/segment_size))) #reindex by the number of intervals of specified length between the start and the end.
@@ -77,7 +77,7 @@ def stretch(data, start = None, end = None, start_true = None, end_true = None, 
 
     return new_data
 
-def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = None, start_true = None, end_true = None, lane = None, grouping = True, summarise = True, as_km = True):
+def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = None, start_true = None, end_true = None, lane = None, grouping = False, summarise = True, as_km = True):
 
     new_data = data.copy()
 
@@ -99,12 +99,14 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     lane = []
     #By default, group by all columns other than the `idvars` (ID variables) 
     if grouping == True:
-        grouping = [col for col in new_data.columns() if col not in idvars and col not in SLKs]
+        grouping = [col for col in new_data.columns if col not in idvars and col not in SLKs]
         if isinstance(summarise, dict):
-            grouping = [col for col in new_data.columns() if col not in idvars and col not in SLKs and col not in list(summarise.keys())]
+            grouping = [col for col in new_data.columns if col not in idvars and col not in SLKs and col not in list(summarise.keys())]
+    
     #If grouping is False, the variable is an empty list
     if grouping == False:
         grouping = []
+
     #Treat grouping as list if a single label is given
     if isinstance(grouping, list) and len(grouping) == 1:
         grouping = [grouping]
