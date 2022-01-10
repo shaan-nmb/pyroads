@@ -70,7 +70,7 @@ def ra_transform(x, method = "name"):
     if method == "number":
         ra_dict = dict(zip(number, name))
 
-    ra = a.map(ra_dict).astype(pd.Int64Dtype())
+    ra = x.map(ra_dict).astype(pd.Int64Dtype())
     
     return ra
 
@@ -83,7 +83,7 @@ def route_change(x, method = "new"):
     if method == "old": 
         route_dict = dict(zip(new_routes, old_routes))
     
-    route_no = a.map(route_dict) 
+    route_no = x.map(route_dict) 
     return route_no
     
 def route_description(x, format = "new"):
@@ -92,12 +92,12 @@ def route_description(x, format = "new"):
     new_routes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
     route_description = ['Perth to Adelaide', ' Perth to Darwin', ' Perth to Bunbury', 'Perth to Port Hedland', ' Perth to Albany', ' Bunbury to Albany', 'Geraldton to Esperance', ' Perth to Esperance','Bunbury to Augusta', 'Albany to Esperance', 'Bindoon (H006) to Dongara (H004) ', 'Manjimup to Albany', 'Nanutarra to GNH', 'Paraburdoo to GNH', 'Derby to GNH', 'Newman to Port Hedland', 'Albany to Lake Grace', 'Perth to Merredin ', 'Bunbury to Lake King', 'Minilya (NWCH) to Exmouth', 'Byford to Coalfields Hwy', 'Busselton to SWH via Pembeton', 'Donnybrook (SWH) to Kojonup (Aly Hwy)', 'Roe Hwy to Toodyay']
 
-    if method == "new":
+    if format == "new":
         route_dict = dict(zip(new_routes, route_description))
-    if method == "old": 
+    if format == "old": 
         route_dict = dict(zip(old_routes, route_description))
     
-    route = a.map(route_dict)
+    route = x.map(route_dict)
 
     return route
 
@@ -110,10 +110,10 @@ def mabcd(x, new = 'mabcd'):
     link_cat_dict = dict(zip(link_category, mabcd))
 
     if 'mabcd' in new.lower():
-        return [mabcd_dict[k] for k in a]
+        return [mabcd_dict[k] for k in x]
 
     if 'link' in new.lower(): 
-        return [link_cat_dict[k] for k in a]
+        return [link_cat_dict[k] for k in x]
     
     else:
         return "`new` must be either 'link' or 'mabcd'"
@@ -152,10 +152,10 @@ def get_lanes(x, current = 'xsp', new = 'dtims'):
 
     lane_dict = dict(zip(old_data, new_data))
 
-    return a.map(lane_dict) 
+    return x.map(lane_dict) 
 
 def get_roads(x, current = 'number', new = 'name'):
-    import pands as pd
+    import pandas as pd
     import numpy as np
 
     #Check that the user is using possible 'current' and 'new' parameters
