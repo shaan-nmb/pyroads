@@ -46,7 +46,7 @@ def stretch(data, start = None, end = None, start_true = None, end_true = None, 
     if segment_size == 'GCD':
         segment_size = gcd
 
-    if segment_size >= gcd:
+    if segment_size > gcd:
         segment_size = gcd
         print(f'`segment_size` is too large. Defaulting to the GCD, {gcd}.')
         
