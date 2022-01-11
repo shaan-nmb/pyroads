@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "pyroads",
-    version = "0.1.17",
+    version = "0.1.18",
     packages = find_packages(),
     description = "For analysis of road asset data.",
     url = "https://github.com/shaan-nmb/pyroads",
