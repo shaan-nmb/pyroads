@@ -327,7 +327,7 @@ def make_segments(data, start = None, end = None, start_true = None, end_true = 
             new_data[end_] = np.where(new_data['too_short'].shift(-1) == True, (new_data[end_].shift(-1) + new_data[start_])/2, new_data[end_])
             new_data[start_] = np.where(new_data['too_short'] == True, new_data[end_].shift(1),  new_data[start_])
             #Drop the boolean columns
-            new_data = new_data.drop(['start_end', 'too_short'], axis = 1) 
+        new_data = new_data.drop(['start_end', 'too_short'], axis = 1) 
    
     if as_km:
         #Convert SLK variables back to km
