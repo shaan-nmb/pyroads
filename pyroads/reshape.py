@@ -216,7 +216,11 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
     if end_true is not None:
         end_true_left, end_true_right = end_true, end_true
     
-    
+    #drop segment id columns if in datasets
+    for df in [left_df, right_df]:
+        if 'segment_id' in df.columns:
+            df = df.drop('segment_id', axis = 1)
+
     #Create copies as to not change the original data
     left_copy = left_df.copy()
     right_copy = right_df.copy()
