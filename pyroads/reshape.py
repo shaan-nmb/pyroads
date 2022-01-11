@@ -77,7 +77,7 @@ def stretch(data, start = None, end = None, start_true = None, end_true = None, 
 
     return new_data
 
-def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = None, start_true = None, end_true = None, lane = None, grouping = False, summarise = True, as_km = True):
+def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = None, start_true = None, end_true = None, lane = None, grouping = False, max_segment = None, summarise = True, as_km = True):
 
     new_data = data.copy()
 
@@ -97,19 +97,20 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     
     #Treat `lane` as empty list if not declared
     lane = []
-    #By default, group by all columns other than the `idvars` (ID variables) 
+    
+    #If grouping is on, group by all columns other than the `idvars` (ID variables) 
     if grouping == True:
         grouping = [col for col in new_data.columns if col not in idvars and col not in SLKs]
         if isinstance(summarise, dict):
             grouping = [col for col in new_data.columns if col not in idvars and col not in SLKs and col not in list(summarise.keys())]
     
-    #If grouping is False, the variable is an empty list
-    if grouping == False:
-        grouping = []
-
     #Treat grouping as list if a single label is given
     if isinstance(grouping, list) and len(grouping) == 1:
         grouping = [grouping]
+    
+    #If grouping is False, the variable is an empty list
+    if grouping == False:
+        grouping = []
 
     #Sort by all columns in grouping, then by true SLK, then by SLK, then lane if declared
     new_data = new_data.sort_values(idvars + SLKs + lane).reset_index(drop = True)
@@ -155,6 +156,8 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     if isinstance(summarise, dict):
         agg_dict.update(summarise)
     
+    if bool(max_segment):
+        new_data = new_data.groupby(['segment_id'] + idvars + lane + grouping).agg(agg_dict)
     new_data = new_data.groupby(['segment_id'] + idvars + lane + grouping).agg(agg_dict)
     
     new_data.columns = ["_".join(x) for x in new_data.columns]
