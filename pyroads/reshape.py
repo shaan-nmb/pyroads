@@ -110,7 +110,7 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
                 grouping = [col for col in new_data.columns if col not in idvars and col not in SLKs and col not in list(summarise.keys())]
         
         #Treat grouping as list if a single label is given
-        if isinstance(grouping, list) and len(grouping) == 1:
+        if  isinstance(grouping, str) and len(grouping.split()) == 1:
             grouping = [grouping]
             
         #Treat all NAs the same
@@ -198,13 +198,13 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
         if idvars_left == None:
             id_vars_left = idvars
         else:
-            if len(idvars_left) == 1:
+            if len(idvars_left.split()) == 1:
                 idvars_left = [idvars_left]
             idvars_left = idvars + idvars_left
         if idvars_right == None:
             idvars_right = idvars
         else:
-            if len(idvars_right) == 1:
+            if len(idvars_right.split()) == 1:
                 idvars_right = [idvars_right]
             idvars_right = idvars + idvars_right
     if start is not None:
