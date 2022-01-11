@@ -95,28 +95,33 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     #Calculate the observation length 
     obs_length = new_data.loc[1, SLKs[0]] - new_data.loc[0, SLKs[0]]
     
-    #Treat `lane` as empty list if not declared
-    lane = []
+    if bool(lane):
+        lane = [lane]
+        #Treat `lane` as empty list if not declared
+    else:
+        lane = []
     
-    #If grouping is on, group by all columns other than the `idvars` (ID variables) 
-    if grouping == True:
-        grouping = [col for col in new_data.columns if col not in idvars and col not in SLKs]
-        if isinstance(summarise, dict):
-            grouping = [col for col in new_data.columns if col not in idvars and col not in SLKs and col not in list(summarise.keys())]
-    
-    #Treat grouping as list if a single label is given
-    if isinstance(grouping, list) and len(grouping) == 1:
-        grouping = [grouping]
+    #grouping - the variables for which to ensure are not broken between segments
+    if bool(grouping):
+        #If grouping is on, group by all columns other than the `idvars` (ID variables) 
+        if grouping == True:
+            grouping = [col for col in new_data.columns if col not in idvars and col not in SLKs]
+            if isinstance(summarise, dict):
+                grouping = [col for col in new_data.columns if col not in idvars and col not in SLKs and col not in list(summarise.keys())]
+        
+        #Treat grouping as list if a single label is given
+        if isinstance(grouping, list) and len(grouping) == 1:
+            grouping = [grouping]
+            
+        #Treat all NAs the same
+        new_data.loc[:, grouping] = new_data.loc[:, grouping].fillna(-1)
     
     #If grouping is False, the variable is an empty list
-    if grouping == False:
-        grouping = []
-
+    else:
+         grouping = []
+        
     #Sort by all columns in grouping, then by true SLK, then by SLK, then lane if declared
-    new_data = new_data.sort_values(idvars + SLKs + lane).reset_index(drop = True)
-
-    #Treat all NAs the same
-    new_data.loc[:, grouping] = new_data.loc[:, grouping].fillna(-1)
+    new_data = new_data.sort_values(idvars + lane + SLKs).reset_index(drop = True)
     
     #If both SLK and true SLK are declared, create a column equal to the diference between the two, in order to check for Points of Equation by changes in the variable
     if bool(true_SLK and SLK):
@@ -124,7 +129,7 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
         new_data.insert(0, "groupkey", new_data.groupby(grouping + idvars + lane + ['slk_diff']).ngroup())
     else:
         new_data.insert(0, "groupkey", new_data.groupby(grouping + idvars + lane).ngroup())
-
+    
     #Create lag and lead columns for SLK, true SLK, and the grouping key to check whether a new group has started
     for var in SLKs:
         new_data['lead_' + var] = new_data[var].shift(-1, fill_value = 0)
@@ -181,7 +186,7 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     
     #After the aggregations are done, the missing data can go back to being NaN
     new_data.loc[:, grouping] = new_data.loc[:, grouping].replace(-1, np.nan)
-    new_data = new_data.sort_values([i for i in idvars + ['START_SLK', 'START_TRUE'] if i in new_data.columns]).reset_index(drop = True)
+    new_data = new_data.reset_index(drop = True)
     new_data['segment_id'] = [i for i in range(len(new_data))]
 
     return new_data
