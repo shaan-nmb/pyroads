@@ -180,10 +180,8 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
         for col in slk_cols:
             new_data.loc[:,col] = new_data.loc[:,col]/1000
 
-    #Remove segment_id (to be replaced)
-    new_data.drop('segment_id')
-        
     #Add the groupbys back to the columns
+    new_data = new_data.reset_index('segment_id', drop = True)
     new_data = new_data.reset_index()
     
     
