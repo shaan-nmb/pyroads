@@ -179,9 +179,13 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
         #Turn into km by default
         for col in slk_cols:
             new_data.loc[:,col] = new_data.loc[:,col]/1000
+
+    #Remove segment_id (to be replaced)
+    new_data.drop('segment_id')
         
     #Add the groupbys back to the columns
     new_data = new_data.reset_index()
+    
     
     #After the aggregations are done, the missing data can go back to being NaN
     new_data.loc[:, grouping] = new_data.loc[:, grouping].replace(-1, np.nan)
