@@ -193,7 +193,18 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
 def interval_merge(left_df, right_df, idvars = None, start = None, end = None, start_true = None, end_true = None, idvars_left = None, idvars_right = None, start_left = None,  end_left = None, start_right = None, end_right = None, start_true_left = None, end_true_left = None, start_true_right = None, end_true_right = None, grouping = True, summarise = True, km = True, use_ranges = True):
     
     if idvars is not None:
-        idvars_left, idvars_right = idvars, idvars
+        if idvars_left == None:
+            id_vars_left = idvars
+        else:
+            if len(idvars_left) == 1:
+                idvars_left = [idvars_left]
+            idvars_left = idvars + idvars_left
+        if idvars_right == None:
+            idvars_right = idvars
+        else:
+            if len(idvars_right) == 1:
+                idvars_right = [idvars_right]
+            idvars_right = idvars + idvars_right
     if start is not None:
         start_left, start_right = start, start
     if end is not None:
