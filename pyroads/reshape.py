@@ -185,6 +185,8 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     
     #After the aggregations are done, the missing data can go back to being NaN
     new_data.loc[:, grouping] = new_data.loc[:, grouping].replace(-1, np.nan)
+    new_data = new_data.sort_values([idvars+lane+start_cols])
+    new_data['segment_id'] = [i for i in range(len(new_data))]
 
     return new_data
 
