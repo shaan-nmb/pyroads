@@ -198,13 +198,13 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
         if idvars_left == None:
             id_vars_left = idvars
         else:
-            if len(idvars_left.split()) == 1:
+            if isinstance(idvars_left, str) and len(idvars_left.split()) == 1:
                 idvars_left = [idvars_left]
             idvars_left = idvars + idvars_left
         if idvars_right == None:
             idvars_right = idvars
         else:
-            if len(idvars_right.split()) == 1:
+            if isinstance(idvars_right, str) and len(idvars_right.split()) == 1:
                 idvars_right = [idvars_right]
             idvars_right = idvars + idvars_right
     if start is not None:
