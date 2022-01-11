@@ -122,7 +122,7 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
         
     #Sort by all columns in grouping, then by true SLK, then by SLK, then lane if declared
     new_data = new_data.sort_values(idvars + lane + SLKs).reset_index(drop = True)
-    
+
     #If both SLK and true SLK are declared, create a column equal to the diference between the two, in order to check for Points of Equation by changes in the variable
     if bool(true_SLK and SLK):
         new_data['slk_diff'] = new_data[true_SLK] - new_data[SLK]
@@ -136,7 +136,6 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
         new_data['lag_' + var] = new_data[var].shift(1, fill_value = 0)
     new_data['lead_groupkey'] = new_data['groupkey'].shift(-1, fill_value = 0)
     new_data['lag_groupkey'] = new_data['groupkey'].shift(1, fill_value = max(new_data['groupkey']))
-
     #Create columns based on whether they represent the start or end of a section.
     starts, ends = {}, {}
     
@@ -164,11 +163,11 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     if bool(max_segment):
         new_data = new_data.groupby(['segment_id'] + idvars + lane + grouping).agg(agg_dict)
     new_data = new_data.groupby(['segment_id'] + idvars + lane + grouping).agg(agg_dict)
-    
+
     new_data.columns = ["_".join(x) for x in new_data.columns]
     new_data = new_data.rename(columns = {'SLK_min': 'START_SLK', 'SLK_max': 'END_SLK', 'true_SLK_min': 'START_TRUE', 'true_SLK_max': 'END_TRUE'})
-    start_cols = [col for col in ['START_SLK', 'START_TRUE'] if col in new_data.columns] 
-    
+    start_cols = [col for col in ['START_SLK', 'START_TRUE'] if col in new_data.columns]
+
     end_cols = [col for col in ['END_SLK', 'END_TRUE'] if col in new_data.columns] 
     slk_cols = start_cols + end_cols
     
@@ -186,8 +185,6 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     
     #After the aggregations are done, the missing data can go back to being NaN
     new_data.loc[:, grouping] = new_data.loc[:, grouping].replace(-1, np.nan)
-    new_data = new_data.reset_index(drop = True)
-    new_data['segment_id'] = [i for i in range(len(new_data))]
 
     return new_data
 
