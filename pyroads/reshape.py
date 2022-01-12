@@ -189,6 +189,7 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     new_data.loc[:, grouping] = new_data.loc[:, grouping].replace(-1, np.nan)
     new_data = new_data.sort_values(idvars+lane+start_cols)
     new_data['segment_id'] = [i for i in range(len(new_data))]
+    new_data = new_data.reset_index(drop = True)
 
     return new_data
 
@@ -196,7 +197,7 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
     
     if idvars is not None:
         if idvars_left == None:
-            id_vars_left = idvars
+            idvars_left = idvars
         else:
             if isinstance(idvars_left, str) and len(idvars_left.split()) == 1:
                 idvars_left = [idvars_left]
@@ -217,9 +218,10 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
         end_true_left, end_true_right = end_true, end_true
     
     #drop segment id columns if in datasets
-    for df in [left_df, right_df]:
-        if 'segment_id' in df.columns:
-            df = df.drop('segment_id', axis = 1)
+    if 'segment_id' in left_df.columns:
+            left_df = left_df.drop('segment_id', axis = 1)
+    if 'segment_id' in right_df.columns:
+            left_df = right_df.drop('segment_id', axis = 1)
 
     #Create copies as to not change the original data
     left_copy = left_df.copy()
@@ -268,7 +270,6 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
     right_stretched = stretch(right_copy, start = slk_dict[start_right], end = slk_dict[end_right], start_true = slk_dict[start_true_right], end_true = slk_dict[end_true_right], as_km = False)
     
     #index by mutual ID variables and stretched SLKs
-    
     id_len = min(len(idvars_left),len(idvars_right))#max number of mutual IDs
     #Rename the right ID Vars to be congruent with the left 
     id_dict = dict(zip(idvars_right[0:id_len], idvars_left[0:id_len]))
@@ -295,18 +296,24 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
         grouping = [col for col in joined.columns if col not in ['true_SLK', 'SLK'] + idvars]
         if isinstance(summarise, dict):
             grouping = [col for col in joined.columns if col not in ['true_SLK', 'SLK'] + idvars + list(summarise.keys())]
-
+            if use_ranges:
+                grouping = grouping + ['org_' + col if col in slks else col for col in joined.columns]
     else:
         grouping = []
+        if use_ranges:
+            grouping = ['org_' + col if col in slks else col for col in joined.columns]
 
     #compact
-    segments = get_segments(joined, true_SLK = 'true_SLK' if 'true_SLK' in joined.columns else None, SLK = 'SLK' if 'SLK' in joined.columns else None, idvars = idvars, grouping = grouping, as_km = True, summarise = summarise)
+    if use_ranges:
+        segments = get_segments(joined, true_SLK = 'org_true_SLK' if 'org_true_SLK' in joined.columns else None, SLK = 'org_SLK' if 'org_SLK' in joined.columns else None, idvars = idvars, grouping = grouping, as_km = True, summarise = summarise)
+    else:
+        segments = get_segments(joined, true_SLK = 'true_SLK' if 'true_SLK' in joined.columns else None, SLK = 'SLK' if 'SLK' in joined.columns else None, idvars = idvars, grouping = grouping, as_km = True, summarise = summarise)
     
     #Drop the duplicates of the SLK columns caused by `get_segments` if the original ranges are being used for the segments
     if use_ranges:
         segments = segments.drop(slks, axis = 1)
         segments.columns = [col[4:] if col[:4]== "org_" else col for col in segments.columns]
-
+    segments = segments.reset_index(drop = True)
     return segments
     
 def make_segments(data, start = None, end = None, start_true = None, end_true = None, max_segment = 100, split_ends = True, as_km = True):
