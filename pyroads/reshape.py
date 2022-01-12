@@ -318,6 +318,8 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
     
     return segments
     
+from pyroads.reshape import as_metres
+
 def make_segments(data, start = None, end = None, start_true = None, end_true = None, max_segment = 100, split_ends = True, as_km = True):
     
     starts = [var for var in [start, start_true] if bool(var)]
@@ -341,14 +343,18 @@ def make_segments(data, start = None, end = None, start_true = None, end_true = 
     #Reshape the data into size specified in 'max_segment'
     new_data = new_data.reindex(new_data.index.repeat(np.ceil((new_data[ends[0]] - new_data[starts[0]])/max_segment))) #reindex by the number of intervals of specified length between the start and the end.
     
-    for start_,end_ in zip(starts, ends):
-    #Increment the start rows by the segment size
-        new_data[start_] = (new_data[start_] + new_data.groupby(level=0).cumcount()*max_segment) 
-    #End SLKs are equal to the lead Start SLKS except where the segment ends
-        new_data[end_] = np.where((new_data[start_].shift(-1) - new_data[start_]) == max_segment, new_data[start_].shift(-1), new_data[end_])
-        if bool(start) and bool(start_true):
+    if bool(start) and bool (start_true):
+        for start_,end_ in zip(starts, ends):
+        #Increment the start rows by the segment size
+            new_data[start_] = (new_data[start_] + new_data.groupby(level=0).cumcount()*max_segment) 
             new_data[end_] = np.where(((new_data[start].shift(-1) - new_data[start]) == max_segment) & ((new_data[start_true].shift(-1) - new_data[start_true]) == max_segment), new_data[start_].shift(-1), new_data[end_])
-    
+    else:
+        for start_,end_ in zip(starts, ends):
+        #Increment the start rows by the segment size
+            new_data[start_] = (new_data[start_] + new_data.groupby(level=0).cumcount()*max_segment) 
+            new_data[end_] = np.where((new_data[start_].shift(-1) - new_data[start_]) == max_segment, new_data[start_].shift(-1), new_data[end_])
+  
+        
     #Check for minimum segment lengths
     if bool(split_ends):
         for start_,end_ in zip(starts, ends):
