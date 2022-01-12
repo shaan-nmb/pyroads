@@ -25,14 +25,17 @@ def gcd_list(items):
 
 ##Turn each observation into sections of specified lengths
 def stretch(data, start = None, end = None, start_true = None, end_true = None, segment_size = 'GCD', sort = None, as_km = True, keep_ranges = False):
-
-    starts = [i for i in [start, start_true] if i is not None]
-    ends = [i for i in [end, end_true] if i is not None]
-    names = [v for k,v in zip([start, start_true], ['SLK', 'true_SLK']) if k is not None]
-    SLKs = starts + ends
-
+    
     new_data = data.copy().reset_index(drop = True) #Copy of the dataset
     new_data = new_data.dropna(thresh = 2)  #drop any row that does not contain at least two non-missing values.
+    
+    #rename columns for consistency of output
+    new_data = new_data.rename(columns = {start:'START_SLK', start_true: 'START_TRUE', end: 'END_SLK', end_true: 'END_TRUE'})
+
+    starts = [col for col in ['START_SLK', 'START_TRUE'] if col in new_data.columns]
+    ends = [col for col in ['END_SLK', 'END_TRUE'] if col in new_data.columns]
+    names = [v for k,v in zip([start, start_true], ['SLK', 'true_SLK']) if k is not None]
+    SLKs = starts + ends
     
     if type(sort) == list:
         new_data =  new_data.sort_values(sort)
@@ -49,7 +52,7 @@ def stretch(data, start = None, end = None, start_true = None, end_true = None, 
     if segment_size > gcd:
         segment_size = gcd
         print(f'`segment_size` is too large. Defaulting to the GCD, of {gcd}m.')
-        
+
     #Reshape the data into size specified in 'obs_length'
     new_data = new_data.reindex(new_data.index.repeat(np.ceil((new_data[ends[0]] - new_data[starts[0]])/segment_size))) #reindex by the number of intervals of specified length between the start and the end.
     
@@ -70,6 +73,7 @@ def stretch(data, start = None, end = None, start_true = None, end_true = None, 
         if as_km:
             for SLK in SLKs:
                 new_data[SLK] = new_data[SLK]/1000 
+        else:
             new_data.rename(columns = {"SLK" : "SLK_m", "true_SLK": "true_SLK_m"})           
     else:
         new_data = new_data.drop([SLK for SLK in SLKs], axis = 1)
@@ -285,7 +289,6 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
     if use_ranges:
         #change the name of the original SLKs before creating segments to avoid confusion
         slks = [i for i in list(slk_dict.values()) if i in joined.columns]
-        joined.columns = ['org_' + col if col in slks else col for col in joined.columns]
     else:
         slks = []
 
@@ -331,7 +334,7 @@ def make_segments(data, start = None, end = None, start_true = None, end_true = 
     for var in SLKs:
         new_data[var] = as_metres(new_data[var])
 
-    new_data['Length'] = new_data[ends[0]] - new_data[starts[0]]
+    new_data.insert(len(new_data.columns) - 1, 'Length', new_data[ends[0]] - new_data[starts[0]])
 
     if bool(split_ends):
         new_data['start_end'] = np.where(new_data['Length'] <= max_segment, True, False)
