@@ -171,18 +171,18 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     new_data.columns = ["_".join(x) for x in new_data.columns]
     new_data = new_data.rename(columns = {'SLK_min': 'START_SLK', 'SLK_max': 'END_SLK', 'true_SLK_min': 'START_TRUE', 'true_SLK_max': 'END_TRUE'})
     start_cols = [col for col in ['START_SLK', 'START_TRUE'] if col in new_data.columns]
-
     end_cols = [col for col in ['END_SLK', 'END_TRUE'] if col in new_data.columns] 
+    
     slk_cols = start_cols + end_cols
     
     #Increment slk_ends by the observation length
     for col in end_cols:
-        new_data.loc[:,col] = new_data.loc[:,col] + obs_length
+        new_data[col] = new_data[col] + obs_length
 
     if as_km:
         #Turn into km by default
         for col in slk_cols:
-            new_data.loc[:,col] = new_data.loc[:,col]/1000
+            new_data[col] = new_data[col]/1000
 
     #Add the groupbys back to the columns
     new_data = new_data.reset_index('segment_id', drop = True)
@@ -196,7 +196,6 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     new_data = new_data.reset_index(drop = True)
 
     return new_data
-
 def interval_merge(left_df, right_df, idvars = None, start = None, end = None, start_true = None, end_true = None, idvars_left = None, idvars_right = None, start_left = None,  end_left = None, start_right = None, end_right = None, start_true_left = None, end_true_left = None, start_true_right = None, end_true_right = None, grouping = True, summarise = True, km = True, use_ranges = True):
     
     if idvars is not None:
@@ -285,38 +284,38 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
     #join by index
     joined = left_stretched.join(right_stretched, how = 'left')
     joined = joined[~joined.index.duplicated(keep = 'first')].reset_index()
+    
 
     if use_ranges:
         #change the name of the original SLKs before creating segments to avoid confusion
         slks = [i for i in list(slk_dict.values()) if i in joined.columns]
+        joined.columns = ['org_' + col if col in slks else col for col in joined.columns]
+        org_slks = ['org_' + i for i in slks]
     else:
         slks = []
-
-    for col in [col for col in joined.columns if 'org' in col]:
-        joined[col] /= 1000
-
-    if bool(grouping) == True:
+    if  grouping == True:
         grouping = [col for col in joined.columns if col not in ['true_SLK', 'SLK'] + idvars]
+        if use_ranges:
+            grouping = grouping + org_slks            
         if isinstance(summarise, dict):
             grouping = [col for col in joined.columns if col not in ['true_SLK', 'SLK'] + idvars + list(summarise.keys())]
-            if use_ranges:
-                grouping = grouping + ['org_' + col if col in slks else col for col in joined.columns]
+    elif isinstance(grouping, list):
+        grouping = grouping
+        if use_ranges:
+            grouping = grouping + org_slks
     else:
         grouping = []
         if use_ranges:
-            grouping = ['org_' + col if col in slks else col for col in joined.columns]
-
-    #compact
-    if use_ranges:
-        segments = get_segments(joined, true_SLK = 'org_true_SLK' if 'org_true_SLK' in joined.columns else None, SLK = 'org_SLK' if 'org_SLK' in joined.columns else None, idvars = idvars, grouping = grouping, as_km = True, summarise = summarise)
-    else:
-        segments = get_segments(joined, true_SLK = 'true_SLK' if 'true_SLK' in joined.columns else None, SLK = 'SLK' if 'SLK' in joined.columns else None, idvars = idvars, grouping = grouping, as_km = True, summarise = summarise)
+            grouping = grouping + org_slks
+    segments = get_segments(joined, true_SLK = 'true_SLK' if 'true_SLK' in joined.columns else None, SLK = 'SLK' if 'SLK' in joined.columns else None, idvars = idvars, grouping = grouping, as_km = True, summarise = summarise)
     
     #Drop the duplicates of the SLK columns caused by `get_segments` if the original ranges are being used for the segments
     if use_ranges:
         segments = segments.drop(slks, axis = 1)
         segments.columns = [col[4:] if col[:4]== "org_" else col for col in segments.columns]
+        segments[slks] = segments[slks]/1000
     segments = segments.reset_index(drop = True)
+    
     return segments
     
 def make_segments(data, start = None, end = None, start_true = None, end_true = None, max_segment = 100, split_ends = True, as_km = True):
@@ -347,7 +346,9 @@ def make_segments(data, start = None, end = None, start_true = None, end_true = 
         new_data[start_] = (new_data[start_] + new_data.groupby(level=0).cumcount()*max_segment) 
     #End SLKs are equal to the lead Start SLKS except where the segment ends
         new_data[end_] = np.where((new_data[start_].shift(-1) - new_data[start_]) == max_segment, new_data[start_].shift(-1), new_data[end_])
-
+        if bool(start) and bool(start_true):
+            new_data[end_] = np.where(((new_data[start].shift(-1) - new_data[start]) == max_segment) & ((new_data[start_true].shift(-1) - new_data[start_true]) == max_segment), new_data[start_].shift(-1), new_data[end_])
+    
     #Check for minimum segment lengths
     if bool(split_ends):
         for start_,end_ in zip(starts, ends):
