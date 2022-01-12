@@ -196,6 +196,7 @@ def get_segments(data, idvars, SLK = None, true_SLK = None, start = None, end = 
     new_data = new_data.reset_index(drop = True)
 
     return new_data
+
 def interval_merge(left_df, right_df, idvars = None, start = None, end = None, start_true = None, end_true = None, idvars_left = None, idvars_right = None, start_left = None,  end_left = None, start_right = None, end_right = None, start_true_left = None, end_true_left = None, start_true_right = None, end_true_right = None, grouping = True, summarise = True, km = True, use_ranges = True):
     
     if idvars is not None:
@@ -283,14 +284,13 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
     
     #join by index
     joined = left_stretched.join(right_stretched, how = 'left')
-    joined = joined[~joined.index.duplicated(keep = 'first')].reset_index()
-    
 
     if use_ranges:
         #change the name of the original SLKs before creating segments to avoid confusion
         slks = [i for i in list(slk_dict.values()) if i in joined.columns]
         joined.columns = ['org_' + col if col in slks else col for col in joined.columns]
         org_slks = ['org_' + i for i in slks]
+        joined = joined.set_index(org_slks, append = True).reset_index([i for i in ['SLK', 'true_SLK'] if i in joined.index.names])
     else:
         slks = []
     if  grouping == True:
@@ -307,6 +307,9 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
         grouping = []
         if use_ranges:
             grouping = grouping + org_slks
+    
+    joined = joined[~joined.index.duplicated(keep = 'first')].reset_index()
+
     segments = get_segments(joined, true_SLK = 'true_SLK' if 'true_SLK' in joined.columns else None, SLK = 'SLK' if 'SLK' in joined.columns else None, idvars = idvars, grouping = grouping, as_km = True, summarise = summarise)
     
     #Drop the duplicates of the SLK columns caused by `get_segments` if the original ranges are being used for the segments
@@ -314,11 +317,10 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
         segments = segments.drop(slks, axis = 1)
         segments.columns = [col[4:] if col[:4]== "org_" else col for col in segments.columns]
         segments[slks] = segments[slks]/1000
+        
     segments = segments.reset_index(drop = True)
     
     return segments
-    
-from pyroads.reshape import as_metres
 
 def make_segments(data, start = None, end = None, start_true = None, end_true = None, max_segment = 100, split_ends = True, as_km = True):
     
