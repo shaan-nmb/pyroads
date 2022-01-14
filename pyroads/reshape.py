@@ -293,23 +293,26 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
         joined = joined.set_index(org_slks, append = True).reset_index([i for i in ['SLK', 'true_SLK'] if i in joined.index.names])
     else:
         slks = []
-    if  grouping == True:
-        grouping = [col for col in joined.columns if col not in ['true_SLK', 'SLK'] + idvars]
-        if use_ranges:
-            grouping = grouping + org_slks            
-        if isinstance(summarise, dict):
-            grouping = grouping + list(summarise.keys())
-    elif isinstance(grouping, list):
+
+    if isinstance(grouping, list):
         grouping = grouping
         if use_ranges:
             grouping = grouping + org_slks
+        if isinstance(summarise, dict):
+            grouping = grouping + list(summarise.keys())
+    elif  grouping == True:
+        grouping = [col for col in joined.columns if col not in ['true_SLK', 'SLK'] + idvars + list(summarise.keys())]
+        if use_ranges:
+            grouping = grouping + org_slks
+        if isinstance(summarise, dict):
+            grouping = grouping + list(summarise.keys())
     else:
         grouping = []
         if use_ranges:
             grouping = grouping + org_slks
     
     joined = joined[~joined.index.duplicated(keep = 'first')].reset_index()
-
+    
     segments = get_segments(joined, true_SLK = 'true_SLK' if 'true_SLK' in joined.columns else None, SLK = 'SLK' if 'SLK' in joined.columns else None, idvars = idvars, grouping = grouping, as_km = True, summarise = summarise)
     
     #Drop the duplicates of the SLK columns caused by `get_segments` if the original ranges are being used for the segments
