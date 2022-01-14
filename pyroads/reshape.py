@@ -298,7 +298,7 @@ def interval_merge(left_df, right_df, idvars = None, start = None, end = None, s
         if use_ranges:
             grouping = grouping + org_slks            
         if isinstance(summarise, dict):
-            grouping = [col for col in joined.columns if col not in ['true_SLK', 'SLK'] + idvars + list(summarise.keys())]
+            grouping = grouping + list(summarise.keys())
     elif isinstance(grouping, list):
         grouping = grouping
         if use_ranges:
