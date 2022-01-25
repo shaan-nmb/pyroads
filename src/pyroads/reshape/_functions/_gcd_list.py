@@ -1,3 +1,7 @@
+from deprecated import deprecated
+
+
+@deprecated(version="0.2.0", reason="Use numpy.gcd.reduce() instead")
 def gcd_list(items):
     items = list(items)
 

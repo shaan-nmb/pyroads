@@ -1,10 +1,6 @@
 
-import pytest
 import pandas as pd
-
-from pyroads.reshape.stretch import stretch
-
-
+from pyroads.reshape import stretch
 
 
 def test_stretch_1():

@@ -1,7 +1,7 @@
-from ._util.gcd_list import gcd_list
+from ._gcd_list import gcd_list
 from .get_segments import get_segments
 from .stretch import stretch
-from ..mappings.as_meters import as_metres
+from ._as_meters import as_metres
 
 
 def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_true=None, end_true=None, idvars_left=None, idvars_right=None, start_left=None, end_left=None, start_right=None, end_right=None, start_true_left=None, end_true_left=None, start_true_right=None, end_true_right=None, grouping=True, summarise=True, km=True, use_ranges=True):

@@ -3,8 +3,8 @@ from typing import Optional, Union, Literal
 import numpy as np
 import pandas as pd
 
-from ._util.gcd_list import gcd_list
-from ..mappings.as_meters import as_metres
+from ._gcd_list import gcd_list
+from ._as_meters import as_metres
 
 
 def stretch(
@@ -56,7 +56,8 @@ def stretch(
 	new_data[SLKs] = new_data[SLKs].apply(as_metres)
 	
 	lengths = new_data[ends[0]] - new_data[starts[0]]
-	gcd = gcd_list(lengths)
+	# gcd = gcd_list(lengths)
+	gcd = np.gcd.reduce(lengths)
 	
 	if segment_size == 'GCD':
 		segment_size = gcd

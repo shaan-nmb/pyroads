@@ -1,5 +1,5 @@
 from deprecated import deprecated
-
+from typing import Literal
 
 @deprecated(version="0.2.0", reason="Easy mapping to perform without this function. Keeping for now as it contains a complete list of link category strings. to be replaced with simpler function or a dict/list for reference purporses in the future")
 def map_link_category_to_mabcd(x, new: Literal["mabcd", "link"] = 'mabcd'):
