@@ -3,7 +3,7 @@ import numpy as np
 from .stretch import stretch
 
 
-def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, start_true=None, end_true=None, lane=None, grouping=False, summarise=True, as_km=True):
+def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, start_true=None, end_true=None, lane=None, grouping=False, summarise=True, as_km=True, km=True):
 	"""Aggregates observations into sections of specified lengths. Optionally the output can simply return ids for future aggregation"""
 	new_data = data.copy()
 
