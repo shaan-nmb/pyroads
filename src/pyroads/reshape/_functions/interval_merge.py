@@ -31,7 +31,7 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 	if 'segment_id' in left_df.columns:
 		left_df = left_df.drop('segment_id', axis=1)
 	if 'segment_id' in right_df.columns:
-		left_df = right_df.drop('segment_id', axis=1)
+		right_df = right_df.drop('segment_id', axis=1)
 	
 	# Create copies as to not change the original data
 	left_copy = left_df.copy()
@@ -62,7 +62,15 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 	gcd = min(gcds)
 	
 	# rename SLKs congruently
-	slk_dict = {start_right: 'START_SLK', start_true_right: 'START_TRUE', end_right: 'END_SLK', end_true_right: 'END_TRUE', start_left: 'START_SLK', start_true_left: 'START_TRUE', end_left: 'END_SLK', end_true_left: 'END_TRUE'}
+	slk_dict = {
+		start_right: 'START_SLK' if bool(start_right) else None, 
+		start_true_right: 'START_TRUE' if bool(start_true_right) else None, 
+		end_right: 'END_SLK' if bool(end_right) else None, 
+		end_true_right: 'END_TRUE' if bool(end_true_right) else None, 
+		start_left: 'START_SLK' if bool(start_left) else None, 
+		start_true_left: 'START_TRUE' if bool(start_true_left) else None, 
+		end_left: 'END_SLK' if bool(end_left) else None, 
+		end_true_left: 'END_TRUE' if bool(end_true_left) else None}
 	
 	left_copy = left_copy.rename(columns=slk_dict)
 	right_copy = right_copy.rename(columns=slk_dict)
@@ -102,14 +110,10 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 		grouping = grouping
 		if use_ranges:
 			grouping = grouping + org_slks
-		if isinstance(summarise, dict):
-			grouping = grouping + list(summarise.keys())
 	elif grouping == True:
 		grouping = [col for col in joined.columns if col not in ['true_SLK', 'SLK'] + idvars + list(summarise.keys())]
 		if use_ranges:
 			grouping = grouping + org_slks
-		if isinstance(summarise, dict):
-			grouping = grouping + list(summarise.keys())
 	else:
 		grouping = []
 		if use_ranges:
