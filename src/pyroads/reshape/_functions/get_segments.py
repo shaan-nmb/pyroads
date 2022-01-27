@@ -9,7 +9,8 @@ def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, st
 
 	#If using point parameters, make sure they are in metres
 	if km and bool(SLK or true_SLK):
-		data.loc[:, SLKs]*1000
+		data.loc[:, [slk for slk in [true_SLK, SLK] if slk is not None]]*1000
+	
 	# Stretch the dataframe into equal length segments if is not already
 	if not bool(SLK or true_SLK):
 		new_data = stretch(data, start=start, end=end, start_true=start_true, end_true=end_true, as_km=False)
@@ -21,8 +22,6 @@ def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, st
 	# Detect whether operating on SLK, True SLK, or both.
 	SLKs = [slk for slk in [true_SLK, SLK] if slk is not None]
 	
-
-
 	# Calculate the observation length
 	obs_length = new_data.loc[1, SLKs[0]] - new_data.loc[0, SLKs[0]]
 	
