@@ -2,8 +2,7 @@ import numpy as np
 
 from .stretch import stretch
 
-
-def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, start_true=None, end_true=None, lane=None, grouping=False, summarise=True, as_km=True, km=True):
+def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, start_true=None, end_true=None, lane=None, grouping=False, summarise=True, as_km=True, km=True, id = True):
 	"""Aggregates observations into sections of specified lengths. Optionally the output can simply return ids for future aggregation"""
 	new_data = data.copy()
 
@@ -35,9 +34,9 @@ def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, st
 	if bool(grouping):
 		# If grouping is on, group by all columns other than the `idvars` (ID variables)
 		if grouping == True:
-			grouping = [col for col in new_data.columns if col not in idvars and col not in SLKs]
+			grouping = [col for col in new_data.columns if col not in idvars + SLKs + lane]
 			if isinstance(summarise, dict):
-				grouping = [col for col in new_data.columns if col not in idvars and col not in SLKs and col not in list(summarise.keys())]
+				grouping = [col for col in new_data.columns if col not in idvars + SLKs + lane + list(summarise.keys())]
 			
 			# Treat grouping as list if a single label is given
 		if isinstance(grouping, str) and len(grouping.split()) == 1:
@@ -45,7 +44,7 @@ def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, st
 		
 		# Treat all NAs the same
 		new_data.loc[:, grouping] = new_data.loc[:, grouping].fillna(-1)
-	
+
 	# If grouping is False, the variable is an empty list
 	else:
 		grouping = []
@@ -81,7 +80,7 @@ def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, st
 	new_data = new_data.drop(['start_bool', 'end_bool', 'groupkey'] + [col for col in new_data.columns if 'lag' in col or 'lead' in col], axis=1)
 	
 	# Summarise the data by `segment_id`
-	
+
 	# By default, summarise the SLK into min and max columns, representing Start and End SLK respectively
 	if bool(summarise):
 		agg_dict = {SLK: [min, max] for SLK in SLKs}
@@ -89,11 +88,11 @@ def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, st
 	# If an aggregation dictionary is provided to `summarise`, add the methods to the SLK method detailed in the previous step
 	if isinstance(summarise, dict):
 		agg_dict.update(summarise)
+		
+	if bool(summarise):
 		new_data = new_data.groupby(['segment_id'] + idvars + lane + grouping).agg(agg_dict)
-	
-	new_data.columns = ["_".join(x) for x in new_data.columns]
-	new_data = new_data.rename(columns={'SLK_min': 'START_SLK', 'SLK_max': 'END_SLK', 'true_SLK_min': 'START_TRUE', 'true_SLK_max': 'END_TRUE'})
-	
+		new_data.columns = ["_".join(x) for x in new_data.columns]
+		new_data = new_data.rename(columns={'SLK_min': 'START_SLK', 'SLK_max': 'END_SLK', 'true_SLK_min': 'START_TRUE', 'true_SLK_max': 'END_TRUE'})
 	start_cols = [col for col in ['START_SLK', 'START_TRUE'] if col in new_data.columns]
 	end_cols = [col for col in ['END_SLK', 'END_TRUE'] if col in new_data.columns]
 	
@@ -116,7 +115,11 @@ def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, st
 	# After the aggregations are done, the missing data can go back to being NaN
 	new_data.loc[:, grouping] = new_data.loc[:, grouping].replace(-1, np.nan)
 	new_data = new_data.sort_values(idvars + lane + start_cols)
-	new_data['segment_id'] = [i for i in range(len(new_data))]
+	if id:
+		new_data['segment_id'] = [i for i in range(len(new_data))]
+	else: 
+		new_data = new_data.drop('segment_id', axis = 1)
+
 	new_data = new_data.reset_index(drop=True)
 	
 	return new_data

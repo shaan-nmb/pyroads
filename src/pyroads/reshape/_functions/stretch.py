@@ -3,8 +3,7 @@ from typing import Optional, Union, Literal
 import numpy as np
 import pandas as pd
 
-from ._gcd_list import gcd_list
-from ._as_meters import as_metres
+from ._as_metres import as_metres
 
 
 def stretch(

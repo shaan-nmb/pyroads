@@ -1,6 +1,5 @@
 from deprecated import deprecated
 
-from ._gcd_list import gcd_list
 from .stretch import stretch
 
 

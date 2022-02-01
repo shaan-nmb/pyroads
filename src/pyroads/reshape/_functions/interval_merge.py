@@ -1,10 +1,10 @@
-from ._gcd_list import gcd_list
 from .get_segments import get_segments
 from .stretch import stretch
-from ._as_meters import as_metres
+from ._as_metres import as_metres
+import numpy as np
 
 
-def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_true=None, end_true=None, idvars_left=None, idvars_right=None, start_left=None, end_left=None, start_right=None, end_right=None, start_true_left=None, end_true_left=None, start_true_right=None, end_true_right=None, grouping=True, summarise=True, km=True, use_ranges=True):
+def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_true=None, end_true=None, idvars_left=None, idvars_right=None, start_left=None, end_left=None, start_right=None, end_right=None, start_true_left=None, end_true_left=None, start_true_right=None, end_true_right=None, grouping=True, summarise=True, km=True, use_ranges=True, id = True):
 	if idvars is not None:
 		if idvars_left == None:
 			idvars_left = idvars
@@ -54,10 +54,10 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 	# Find the gcd for all start-end pairs
 	# left
 	for start, end in zip(starts_left, ends_left):
-		gcds.append(gcd_list(left_metres[end] - left_metres[start]))
+		gcds.append(np.gcd.reduce(left_metres[end] - left_metres[start]))
 	# right
 	for start, end in zip(starts_right, ends_right):
-		gcds.append(gcd_list(right_metres[end] - right_metres[start]))
+		gcds.append(np.gcd.reduce(right_metres[end] - right_metres[start]))
 	# Find the minimum
 	gcd = min(gcds)
 	
@@ -99,7 +99,7 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 	
 	if use_ranges:
 		# change the name of the original SLKs before creating segments to avoid confusion
-		slks = [i for i in list(slk_dict.values()) if i in joined.columns]
+		slks = set([i for i in list(slk_dict.values()) if i in joined.columns])
 		joined.columns = ['org_' + col if col in slks else col for col in joined.columns]
 		org_slks = ['org_' + i for i in slks]
 		joined = joined.set_index(org_slks, append=True).reset_index([i for i in ['SLK', 'true_SLK'] if i in joined.index.names])
@@ -122,9 +122,12 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 		if use_ranges:
 			grouping = grouping + org_slks
 	
-	joined = joined[~joined.index.duplicated(keep='first')].reset_index()
-	
-	segments = get_segments(joined, true_SLK='true_SLK' if 'true_SLK' in joined.columns else None, SLK='SLK' if 'SLK' in joined.columns else None, idvars=idvars, grouping=grouping, as_km=True, summarise=summarise)
+	if use_ranges:
+		joined = joined.reset_index()
+	else:
+		joined = joined[~joined.index.duplicated(keep='first')].reset_index()
+
+	segments = get_segments(joined, true_SLK='true_SLK' if 'true_SLK' in joined.columns else None, SLK='SLK' if 'SLK' in joined.columns else None, idvars=idvars, grouping=grouping, as_km=True, summarise=summarise, id = id)
 	
 	# Drop the duplicates of the SLK columns caused by `get_segments` if the original ranges are being used for the segments
 	if use_ranges:

@@ -1,6 +1,6 @@
 import numpy as np
 
-from ._as_meters import as_metres
+from ._as_metres import as_metres
 
 
 def make_segments(data, start=None, end=None, start_true=None, end_true=None, max_segment=100, split_ends=True, as_km=True):
