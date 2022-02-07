@@ -99,7 +99,7 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 	
 	if use_ranges:
 		# change the name of the original SLKs before creating segments to avoid confusion
-		slks = set([i for i in list(slk_dict.values()) if i in joined.columns])
+		slks = list(set([i for i in list(slk_dict.values()) if i in joined.columns]))
 		joined.columns = ['org_' + col if col in slks else col for col in joined.columns]
 		org_slks = ['org_' + i for i in slks]
 		joined = joined.set_index(org_slks, append=True).reset_index([i for i in ['SLK', 'true_SLK'] if i in joined.index.names])

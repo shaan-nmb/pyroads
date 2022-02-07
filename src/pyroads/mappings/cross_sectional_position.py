@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -86,3 +86,24 @@ def lane_to_side(data, name = None, side_name = 'side'):
 			name = names[0]
 	new_data.loc[:, side_name] = np.where(data[name].str.contains("^L"), 'L', 'R')
 	return new_data.reset_index(drop = True)
+
+def lane_transpose(
+    data: pd.DataFrame,
+    idvars: list[str],
+    xsp: str,
+    values: Optional[Union[str, list[str]]] = None):
+
+    new_data = data.copy()
+
+    #Select only regular lanes
+    new_data = new_data.loc[new_data[xsp].isin(['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'R1', 'R2', 'R3', 'R4', 'R5'])]
+    #Split into two columns. One for direction, and one for lane number.
+    new_data['DIRN'] = new_data[xsp].str[0]
+    new_data['LANE_NO'] = new_data[xsp].str[1]
+    #Drop the full XSP column
+    new_data = new_data.drop(xsp, axis = 1)
+
+    #pivot
+    new_data = new_data.pivot(index = idvars.append('DIRN'), columns = 'LANE_NO', values = values)
+
+    return new_data
