@@ -117,8 +117,6 @@ def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, st
 	new_data = new_data.sort_values(idvars + lane + start_cols)
 	if id:
 		new_data['segment_id'] = [i for i in range(len(new_data))]
-	else: 
-		new_data = new_data.drop('segment_id', axis = 1)
 
 	new_data = new_data.reset_index(drop=True)
 	
