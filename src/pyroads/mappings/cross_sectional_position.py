@@ -102,8 +102,9 @@ def lane_transpose(
     new_data['LANE_NO'] = new_data[xsp].str[1]
     #Drop the full XSP column
     new_data = new_data.drop(xsp, axis = 1)
-
+    idvars.append('DIRN')
+    
     #pivot
-    new_data = new_data.pivot(index = idvars.append('DIRN'), columns = 'LANE_NO', values = values)
+    new_data = new_data.pivot_table(index = idvars, columns = 'LANE_NO', values = values).reset_index()
 
     return new_data
