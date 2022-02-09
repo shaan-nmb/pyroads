@@ -104,10 +104,10 @@ def lane_transpose(
 		cols = [col for col in new_data.columns if prefix in col]
 		lane_df = new_data[cols].melt(var_name = 'LANE_NO', value_name = prefix, ignore_index = False)
 		new_data = new_data.join(lane_df).reset_index(drop = True)
-		new_data['LANE_NO'] = new_data['LANE_NO'].str[-1] 
+		new_data['LANE_NO'] = new_data.loc[:, 'LANE_NO'].str[-1] 
 		new_data.insert(len(new_data.columns) -1, 'XSP', new_data[dirn].astype(str) + new_data.LANE_NO.astype(str))
 		new_data['XSP'] = np.where(new_data['XSP'].str.contains('TP'), 'TP', new_data['XSP']) 
-		new_data = new_data.drop(['LANE_NO'], axis = 1)
+		new_data = new_data.drop(['LANE_NO'] + cols, axis = 1)
 		return new_data
 
     #Select only regular lanes
