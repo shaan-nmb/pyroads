@@ -89,35 +89,38 @@ def lane_to_side(data, name = None, side_name = 'side'):
 	return new_data.reset_index(drop = True)
 
 def lane_transpose(
-    data: pd.DataFrame,
-    idvars: Optional[list[str]] = None,
-    xsp: Optional[str] = None,
-    dirn: Optional[str] = None,
-    values: Optional[Union[str, list[str]]] = None,
-	reverse: bool = False):
+	data: pd.DataFrame,
+	idvars: Optional[list[str]] = None,
+	xsp: Optional[str] = None,
+	dirn: Optional[str] = None,
+	prefix: Optional[str] = None,
+	values: Optional[Union[str, list[str]]] = None,
+	reverse: bool = False
+	):
 	
-    new_data = data.copy()
+	new_data = data.copy()
     
-    if reverse:
-        lane_df = new_data['Lane'].melt(var_name = 'LANE_NO', ignore_index = False)
-        new_data = new_data.drop('Lane', level = 0, axis = 1)
-        new_data = new_data.droplevel(level = 1, axis = 1)
-        new_data = new_data.join(lane_df).reset_index(drop = True)
-        new_data.insert(len(new_data.columns) -1, 'XSP', new_data[dirn].astype(str) + new_data.LANE_NO.astype(str))
-        new_data['XSP'] = np.where(new_data['XSP'].str.contains('TP'), 'TP', new_data['XSP']) 
-        new_data = new_data.drop(['LANE_NO'], axis = 1)
-        return new_data
+	if reverse:
+		cols = [col for col in new_data.columns if prefix in col]
+		lane_df = new_data[cols].melt(var_name = 'LANE_NO', value_name = prefix, ignore_index = False)
+		new_data = new_data.join(lane_df).reset_index(drop = True)
+		new_data['LANE_NO'] = new_data['LANE_NO'].str[-1] 
+		new_data.insert(len(new_data.columns) -1, 'XSP', new_data[dirn].astype(str) + new_data.LANE_NO.astype(str))
+		new_data['XSP'] = np.where(new_data['XSP'].str.contains('TP'), 'TP', new_data['XSP']) 
+		new_data = new_data.drop(['LANE_NO'], axis = 1)
+		return new_data
 
     #Select only regular lanes
-    new_data = new_data.loc[new_data[xsp].isin(['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'R1', 'R2', 'R3', 'R4', 'R5'])]
-    #Split into two columns. One for direction, and one for lane number.
-    new_data['DIRN'] = new_data[xsp].str[0]
-    new_data['LANE_NO'] = new_data[xsp].str[1]
-    #Drop the full XSP column
-    new_data = new_data.drop(xsp, axis = 1)
-    idvars.append('DIRN')
+	new_data = new_data.loc[new_data[xsp].isin(['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'R1', 'R2', 'R3', 'R4', 'R5'])]
+	#Split into two columns. One for direction, and one for lane number.
+	new_data['DIRN'] = new_data[xsp].str[0]
+	new_data['LANE_NO'] = new_data[xsp].str[1]
+	#Drop the full XSP column
+	new_data = new_data.drop(xsp, axis = 1)
+	idvars.append('DIRN')
     
-    #pivot
-    new_data = new_data.pivot_table(index = idvars, columns = 'LANE_NO', values = values).reset_index()
+	#pivot
+	new_data = new_data.pivot_table(index = idvars, columns = 'LANE_NO', values = values).reset_index()
+	new_data.columns = ["".join(x) for x in new_data.columns]
 
-    return new_data
+	return new_data
