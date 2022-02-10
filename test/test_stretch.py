@@ -1,9 +1,11 @@
 
-import pandas as pd
-from pyroads.reshape import stretch
+
 
 
 def test_stretch_1():
+	import pandas as pd
+	from pyroads.reshape import stretch
+
 	segmentation = pd.DataFrame(
 		columns=["road_no", "carriageway", "slk_from", "slk_to"],
 		data=[
@@ -45,6 +47,9 @@ def test_stretch_1():
 
 
 def test_stretch_2():
+	import pandas as pd
+	from pyroads.reshape import stretch
+	
 	df = pd.read_csv("./test/test_data/tsd_albany_hwy_poe_1.4.csv")
 
 	result = stretch(
