@@ -22,7 +22,7 @@ def make_segments(data, start=None, end=None, start_true=None, end_true=None, ma
 		(DataFrame) new dataframe with the same columns as the input, but with additional repeated rows such that the the segmentation length now no longer than `max_segment`.
 	"""
 
-		starts = [var for var in [start, start_true] if bool(var)]
+	starts = [var for var in [start, start_true] if bool(var)]
 	ends = [var for var in [end, end_true] if bool(var)]
 	
 	new_data = data.copy()  # Copy of the dataset
