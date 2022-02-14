@@ -41,4 +41,10 @@ def test_make_segments_slk_only():
 	# length column might be slightly fuzzy
 	actual_result["Length"] = actual_result["Length"].round(3)
 	
-	assert actual_result.equals(expected_result)
+	try:
+
+		assert actual_result.equals(expected_result)
+
+	except AssertionError:
+
+		raise Exception("\n\nEquality Test Failed - Assertion Error\n" + str(actual_result.compare(expected_result)) + "\n\n")

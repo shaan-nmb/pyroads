@@ -1,7 +1,6 @@
 import numpy as np
 
-from ._as_metres import as_metres
-
+from pyroads.reshape._functions._as_metres import as_metres
 
 def make_segments(data, start=None, end=None, start_true=None, end_true=None, max_segment=100, split_ends=True, as_km=True):
 	"""
@@ -23,7 +22,7 @@ def make_segments(data, start=None, end=None, start_true=None, end_true=None, ma
 		(DataFrame) new dataframe with the same columns as the input, but with additional repeated rows such that the the segmentation length now no longer than `max_segment`.
 	"""
 
-	starts = [var for var in [start, start_true] if bool(var)]
+		starts = [var for var in [start, start_true] if bool(var)]
 	ends = [var for var in [end, end_true] if bool(var)]
 	
 	new_data = data.copy()  # Copy of the dataset
@@ -51,22 +50,21 @@ def make_segments(data, start=None, end=None, start_true=None, end_true=None, ma
 			# Increment the start rows by the segment size
 			new_data[start_] = (new_data[start_] + new_data.groupby(level=0).cumcount() * max_segment)
 			new_data[end_] = np.where((new_data[start_].shift(-1) - new_data[start_]) == max_segment, new_data[start_].shift(-1), new_data[end_])
-	
+
 	# Check for minimum segment lengths
-	if bool(split_ends):
+	if split_ends:
 		for start_, end_ in zip(starts, ends):
 			#A start_end is any observation that is too small to be split, hence it is both the start and the end of a segment.	
 			new_data['start_end'] = np.where(new_data['Length'] <= max_segment, True, False)
 			# where the difference between the `end` and `start` is less than the minimum segment size and isn't a start_end, subtract the difference from the `start` and set the same value as the previous `end`
-			new_data['too_short'] = np.where(((new_data[end_] - new_data[start_]) < max_segment) & (new_data['start_end'] == False), True, False)
-			new_data[start_] = np.where(new_data['too_short'] == True, new_data[end_].shift(1), new_data[start_])			
+			new_data['too_short'] = np.where(((new_data[end_] - new_data[start_]) < max_segment) & (new_data['start_end'] == False), True, False)		
 			new_data[end_] = np.where(new_data['too_short'].shift(-1) == True, (new_data[end_].shift(-1) + new_data[start_]) / 2, new_data[end_])
+			new_data[start_] = np.where(new_data['too_short'] == True, new_data[end_].shift(1), new_data[start_])	
 			#Find the 2 decimal place ceiling and floor for start and end values respectively.
-			new_data[start_] = np.ceil(new_data[end_]*100)/100
-			new_data[end_] = np.floor(new_data[end_]*100)/100
-		# Drop the boolean columns
-		new_data = new_data.drop(['start_end', 'too_short'], axis=1)
-	
+			new_data[start_] = np.round(new_data[start_]/10) * 10
+			new_data[end_] = np.round(new_data[end_]/10) * 10
+			# Drop the boolean columns
+			new_data = new_data.drop(['start_end', 'too_short'], axis=1)
 	if as_km:
 		# Convert SLK variables back to km
 		for var in SLKs:
