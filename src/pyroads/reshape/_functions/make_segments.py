@@ -71,10 +71,12 @@ def make_segments(data, start=None, end=None, start_true=None, end_true=None, ma
 			new_data[var] = new_data[var] / 1000
 	
 	# recalculate length
+	new_data = new_data.drop('Length', axis = 1) 
 	new_data['Length'] = new_data[ends[0]] - new_data[starts[0]]
-	new_data = new_data.reset_index(drop=True)
 	
 	if id:
-		new_data['segment_id'] = [i for i in range(len(new_data))]
+		new_data['segment_id'] = [i+1 for i in range(len(new_data) + 1)]
+		new_data['original_id'] = new_data.index + 1
+	new_data = new_data.reset_index(drop = True)
 	
 	return new_data
