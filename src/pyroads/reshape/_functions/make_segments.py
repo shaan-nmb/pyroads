@@ -3,7 +3,26 @@ import numpy as np
 from ._as_metres import as_metres
 
 
-def make_segments(data, start=None, end=None, start_true=None, end_true=None, max_segment=100, split_ends=True, as_km=True, id = False):
+def make_segments(data, start=None, end=None, start_true=None, end_true=None, max_segment=100, split_ends=True, as_km=True):
+	"""
+	Takes larger segments of variable length and splits them into a smaller regular length.
+	The attributes of each original observation are repeated for each split output segment.
+	Some segments at the end may be shorter than the specified length
+
+	Args:
+		data (DataFrame):  Dataframe containing the data to be reshaped
+		start (str):       Column name of the start of the segment
+		end (str):         Column name of the end of the segment
+		start_true (str):  Column name of the start of the segment, in true distance
+		end_true (str):    Column name of the end of the segment, in true distance
+		max_segment (int): Maximum segment length of output. Segments in the input that are already shorter may not be split.
+		split_ends (bool): Prevent the last segment being very short by combining it with the second last segment then splitting that segment in half
+		as_km (bool):      If True, the start and end columns are assumed to be in km, and are converted to metres before being used.
+
+	Returns:
+		(DataFrame) new dataframe with the same columns as the input, but with additional repeated rows such that the the segmentation length now no longer than `max_segment`.
+	"""
+
 	starts = [var for var in [start, start_true] if bool(var)]
 	ends = [var for var in [end, end_true] if bool(var)]
 	
