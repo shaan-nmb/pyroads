@@ -90,8 +90,8 @@ def lane_to_side(data, name = None, side_name = 'side'):
 
 def lane_to_col(
 	data: pd.DataFrame,
-	idvars: list[str] = None,
 	xsp: str,
+	idvars: list[str] = None,
 	values: Optional[Union[str, list[str]]] = None,
 	):
 	
