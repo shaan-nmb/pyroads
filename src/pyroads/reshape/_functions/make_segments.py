@@ -2,7 +2,7 @@ import numpy as np
 
 from pyroads.reshape._functions._as_metres import as_metres
 
-def make_segments(data, start=None, end=None, start_true=None, end_true=None, max_segment=100, split_ends=True, as_km=True):
+def make_segments(data, start=None, end=None, start_true=None, end_true=None, max_segment=100, split_ends=True, as_km=True, id = False):
 	"""
 	Takes larger segments of variable length and splits them into a smaller regular length.
 	The attributes of each original observation are repeated for each split output segment.
@@ -75,8 +75,8 @@ def make_segments(data, start=None, end=None, start_true=None, end_true=None, ma
 	new_data['Length'] = new_data[ends[0]] - new_data[starts[0]]
 	
 	if id:
-		new_data['segment_id'] = [i+1 for i in range(len(new_data))]
 		new_data['original_id'] = new_data.index + 1
+		new_data['segment_id'] = [i+1 for i in range(len(new_data))]		
 	new_data = new_data.reset_index(drop = True)
 	
 	return new_data

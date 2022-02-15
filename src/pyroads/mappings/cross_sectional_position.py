@@ -88,28 +88,15 @@ def lane_to_side(data, name = None, side_name = 'side'):
 	new_data.loc[:, side_name] = np.where(data[name].str.contains("^L"), 'L', 'R')
 	return new_data.reset_index(drop = True)
 
-def lane_transpose(
+def lane_to_col(
 	data: pd.DataFrame,
 	idvars: Optional[list[str]] = None,
 	xsp: Optional[str] = None,
-	dirn: Optional[str] = None,
-	prefix: Optional[str] = None,
 	values: Optional[Union[str, list[str]]] = None,
-	reverse: bool = False
 	):
 	
 	new_data = data.copy()
     
-	if reverse:
-		cols = [col for col in new_data.columns if prefix in col]
-		lane_df = new_data[cols].melt(var_name = 'LANE_NO', value_name = prefix, ignore_index = False)
-		new_data = new_data.join(lane_df).reset_index(drop = True)
-		new_data['LANE_NO'] = new_data.loc[:, 'LANE_NO'].str[-1] 
-		new_data.insert(len(new_data.columns) -1, 'XSP', new_data[dirn].astype(str) + new_data.LANE_NO.astype(str))
-		new_data['XSP'] = np.where(new_data['XSP'].str.contains('TP'), 'TP', new_data['XSP']) 
-		new_data = new_data.drop(['LANE_NO'] + cols, axis = 1)
-		return new_data
-
     #Select only regular lanes
 	new_data = new_data.loc[new_data[xsp].isin(['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'R1', 'R2', 'R3', 'R4', 'R5'])]
 	#Split into two columns. One for direction, and one for lane number.
@@ -120,7 +107,44 @@ def lane_transpose(
 	idvars.append('DIRN')
     
 	#pivot
-	new_data = new_data.pivot_table(index = idvars, columns = 'LANE_NO', values = values).reset_index()
+	new_data = new_data.pivot(index = idvars, columns = 'LANE_NO', values = values).reset_index()
 	new_data.columns = ["".join(x) for x in new_data.columns]
 
 	return new_data
+
+def lane_to_row(
+	data: pd.DataFrame,
+	dirn: str,
+	idvars: Union[str, list[str]],
+	start: Optional[str] = None,
+	end: Optional[str] = None,
+	true_start: Optional[str] = None,
+	true_end: Optional[str] = None,
+	prefixes: Optional[Union[str, list[str]]] = None,
+	):
+
+	new_data = data.copy()
+	slks = [col for col in [start, end, true_start, true_end] if bool(col)]
+
+	if prefixes is None:
+			lane_df_base = new_data[idvars + [dirn] + ['6','5','4','3','2','1','TP']].melt(id_vars = idvars + [dirn], value_vars = ['6','5','4','3','2','1','TP'], var_name = 'LANE_NO', ignore_index = False)	
+			lane_df_base = lane_df_base.drop('value', axis = 1)
+	if isinstance(prefixes, str):
+		cols = [col for col in new_data.columns if prefixes in col]
+		lane_df_base = new_data[cols + idvars + [dirn] + slks].melt(id_vars = idvars + [dirn], var_name = 'LANE_NO', value_name = prefixes[0], ignore_index = False)
+	
+	if isinstance(prefixes, list):
+		cols = [col for col in new_data.columns if prefixes[0] in col]
+		lane_df_base = new_data[cols + idvars + [dirn] + slks].melt(id_vars = idvars + [dirn] + slks, var_name = 'LANE_NO', value_name = prefixes[0], ignore_index = False)
+		lane_df_base = lane_df_base.drop([col for col in lane_df_base if col not in idvars + slks + ['LANE_NO', dirn, prefixes[0]]], axis = 1)
+		for prefix in prefixes[1:]:
+			cols = [col for col in new_data.columns if prefix in col]
+			lane_df_temp = new_data[cols + idvars].melt(id_vars = idvars, var_name = 'LANE_NO', value_name = prefix, ignore_index = False)
+			lane_df_temp = lane_df_temp[prefix]
+			lane_df_base = lane_df_base.join(lane_df_temp)
+	lane_df_base['LANE_NO'] = lane_df_base.loc[:, 'LANE_NO'].str[-1] 
+	lane_df_base.insert(len(lane_df_base.columns) -1, 'XSP', lane_df_base[dirn].astype(str) + lane_df_base.LANE_NO.astype(str))
+	lane_df_base['XSP'] = np.where(lane_df_base['XSP'].str.contains('P'), 'TP', lane_df_base['XSP'])
+	lane_df = lane_df_base.drop(['LANE_NO', dirn], axis = 1) 
+
+	return lane_df

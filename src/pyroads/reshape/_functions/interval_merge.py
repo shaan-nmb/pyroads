@@ -135,6 +135,7 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 		segments.columns = [col[4:] if col[:4] == "org_" else col for col in segments.columns]
 		segments[slks] = segments[slks] / 1000
 	
+	segments = segments.drop_duplicates()
 	segments = segments.reset_index(drop=True)
 	
 	return segments
