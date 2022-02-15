@@ -4,7 +4,7 @@ from ._as_metres import as_metres
 import numpy as np
 
 
-def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_true=None, end_true=None, idvars_left=None, idvars_right=None, start_left=None, end_left=None, start_right=None, end_right=None, start_true_left=None, end_true_left=None, start_true_right=None, end_true_right=None, grouping=True, summarise=True, km=True, use_ranges=True, id = True):
+def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_true=None, end_true=None, idvars_left=None, idvars_right=None, start_left=None, end_left=None, start_right=None, end_right=None, start_true_left=None, end_true_left=None, start_true_right=None, end_true_right=None, grouping=True, summarise=True, km=True, use_ranges=True, id = False):
 	if idvars is not None:
 		if idvars_left == None:
 			idvars_left = idvars
