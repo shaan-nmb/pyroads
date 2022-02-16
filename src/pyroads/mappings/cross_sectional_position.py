@@ -91,21 +91,26 @@ def lane_to_side(data, name = None, side_name = 'side'):
 def lane_to_col(
 	data: pd.DataFrame,
 	xsp: str,
+	turn_pockets: bool = False,
 	idvars: list[str] = None,
 	values: Optional[Union[str, list[str]]] = None,
 	):
 	
 	new_data = data.copy()
-    
-    #Select only regular lanes
-	new_data = new_data.loc[new_data[xsp].isin(['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'R1', 'R2', 'R3', 'R4', 'R5'])]
+
+	#Select only regular lanes
+	regular_lanes = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'R1', 'R2', 'R3', 'R4', 'R5']
+	if turn_pockets:
+		regular_lanes.append('TP')
+		
+	new_data = new_data.loc[new_data[xsp].isin(regular_lanes)]
 	#Split into two columns. One for direction, and one for lane number.
 	new_data['DIRN'] = new_data[xsp].str[0]
 	new_data['LANE_NO'] = new_data[xsp].str[1]
 	#Drop the full XSP column
 	new_data = new_data.drop(xsp, axis = 1)
 	idvars.append('DIRN')
-    
+
 	#pivot
 	new_data = new_data.pivot(index = idvars, columns = 'LANE_NO', values = values).reset_index()
 	new_data.columns = ["".join(x) for x in new_data.columns]
@@ -146,5 +151,6 @@ def lane_to_row(
 	lane_df_base.insert(len(lane_df_base.columns) -1, 'XSP', lane_df_base[dirn].astype(str) + lane_df_base.LANE_NO.astype(str))
 	lane_df_base['XSP'] = np.where(lane_df_base['XSP'].str.contains('P'), 'TP', lane_df_base['XSP'])
 	lane_df = lane_df_base.drop(['LANE_NO', dirn], axis = 1) 
+	lane_df = lane_df.drop_duplicates().reset_index(drop = True)
 
 	return lane_df
