@@ -4,10 +4,15 @@ Python package for analysis of road asset data
 
 ## Installation
 
+### If you have git installed
 ```
 pip install git+https://github.com/shaan-nmb/pyroads.git#egg=pyroads
 ```
 
+### If you do not have git installed
+```
+pip install "https://github.com/shaan-nmb/pyroads/zipball/main/"
+```
 ## Background
 
 This package collects together a number of functions used to reshape and prepare road condition data for various modelling and reporting processes.
