@@ -27,13 +27,13 @@ def make_segments(data, start=None, end=None, start_true=None, end_true=None, ma
 	
 	new_data = data.copy()  # Copy of the dataset
 	
-	SLKs = [slk for slk in starts + ends if slk is not None]
+	slks = [slk for slk in starts + ends if slk is not None]
 	
 	new_data = new_data.dropna(thresh=2)  # drop any row that does not contain at least two non-missing values.
 	
 	# Change SLK variables to 32 bit integers of metres to avoid the issue with calculations on floating numbers
-	for var in SLKs:
-		new_data[var] = as_metres(new_data[var])
+	for slk in slks:
+		new_data[slk] = as_metres(new_data[slk])
 	
 	new_data.insert(len(new_data.columns) - 1, 'Length', new_data[ends[0]] - new_data[starts[0]])
 	
@@ -67,8 +67,8 @@ def make_segments(data, start=None, end=None, start_true=None, end_true=None, ma
 			new_data = new_data.drop(['start_end', 'too_short'], axis=1)
 	if as_km:
 		# Convert SLK variables back to km
-		for var in SLKs:
-			new_data[var] = new_data[var] / 1000
+		for slk in slks:
+			new_data[slk] = new_data[slk] / 1000
 	
 	# recalculate length
 	new_data = new_data.drop('Length', axis = 1) 

@@ -119,7 +119,7 @@ def lane_to_col(
 		idvars.append('DIRN')
 		
 	#pivot
-	new_data = new_data.fillna(-1).pivot_table(index = idvars, columns = 'LANE_NO', values = values).reset_index(drop = True)
+	new_data = new_data.fillna(-1).pivot_table(index = idvars, columns = 'LANE_NO', values = values).reset_index()
 	new_data = new_data.replace(-1, np.nan)
 	new_data.columns = ["".join(x) for x in new_data.columns]
 	
@@ -161,5 +161,11 @@ def lane_to_row(
 	lane_df_base['XSP'] = np.where(lane_df_base['XSP'].str.contains('P'), 'TP', lane_df_base['XSP'])
 	lane_df = lane_df_base.drop(['LANE_NO', dirn], axis = 1) 
 	lane_df = lane_df.drop_duplicates().reset_index(drop = True)
+
+	#Order the columns to be the idvars followed by the SLKs
+	for slk in slks:
+		x = 1
+		lane_df.insert(len(idvars) + x, slk, lane_df.pop(slk))
+		x = x + 1
 
 	return lane_df
