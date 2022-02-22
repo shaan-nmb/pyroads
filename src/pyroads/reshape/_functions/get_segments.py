@@ -3,7 +3,7 @@ import numpy as np
 from .stretch import stretch
 
 def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, start_true=None, end_true=None, lane=None, grouping=False, summarise=True, as_km=True, km=True, id = True):
-	"""Aggregates observations into sections of specified lengths. Optionally the output can simply return ids for future aggregation"""
+	"""Aggregates observations into sections of grouped by categorical variables. Optionally, the output can simply return IDs for future aggregation."""
 	new_data = data.copy()
 
 	#If using point parameters, make sure they are in metres
@@ -96,7 +96,7 @@ def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, st
 	start_cols = [col for col in ['START_SLK', 'START_TRUE'] if col in new_data.columns]
 	end_cols = [col for col in ['END_SLK', 'END_TRUE'] if col in new_data.columns]
 	
-	slk_cols = start_cols + end_cols
+	slks = start_cols + end_cols
 	
 	# Increment slk_ends by the observation length
 	for col in end_cols:
@@ -104,7 +104,7 @@ def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, st
 	
 	if as_km:
 		# Turn into km by default
-		for col in slk_cols:
+		for col in slks:
 			new_data[col] = new_data[col] / 1000
 	
 	if bool(summarise):
@@ -115,6 +115,13 @@ def get_segments(data, idvars, SLK=None, true_SLK=None, start=None, end=None, st
 	# After the aggregations are done, the missing data can go back to being NaN
 	new_data.loc[:, grouping] = new_data.loc[:, grouping].replace(-1, np.nan)
 	new_data = new_data.sort_values(idvars + lane + start_cols)
+
+	#Order the columns to be the idvars followed by the SLKs
+	for slk in slks:
+		x = 1
+		new_data.insert(len(idvars) + x, slk, new_data.pop(slk))
+		x = x + 1
+
 	if id:
 		new_data['segment_id'] = [i for i in range(len(new_data))]
 

@@ -79,4 +79,10 @@ def make_segments(data, start=None, end=None, start_true=None, end_true=None, ma
 		new_data['segment_id'] = [i+1 for i in range(len(new_data))]		
 	new_data = new_data.reset_index(drop = True)
 	
+	#Order the columns to be the idvars followed by the SLKs
+	for slk in slks:
+		x = 1
+		new_data.insert(len(idvars) + x, slk, new_data.pop(slk))
+		x = x + 1
+
 	return new_data
