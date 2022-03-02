@@ -140,7 +140,7 @@ def lane_to_row(
 	slks = [col for col in [start, end, start_true, end_true] if bool(col)]
 
 	if prefixes is None:
-			lane_df_base = new_data[idvars + [dirn] + ['6','5','4','3','2','1','TP']].melt(id_vars = idvars + [dirn], value_vars = ['6','5','4','3','2','1','TP'], var_name = 'LANE_NO', ignore_index = True)	
+			lane_df_base = new_data[idvars + [dirn] + ['6','5','4','3','2','1','TP']].melt(id_vars = idvars + [dirn] + slks, value_vars = ['6','5','4','3','2','1','TP'], var_name = 'LANE_NO', ignore_index = True)	
 
 	if isinstance(prefixes, str):
 		cols = [col for col in new_data.columns if prefixes in col]
