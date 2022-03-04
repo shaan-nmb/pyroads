@@ -149,10 +149,10 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 	#Order the columns to be the idvars followed by the SLKs
 	for slk in slks:
 		x = 1
-		segments.insert(len(idvars) + x, slk, segments.pop(slk))
+		summarised_df.insert(len(idvars) + x, slk, summarised_df.pop(slk))
 		x = x + 1
 	
-	segments = segments.drop_duplicates()
-	segments = segments.reset_index(drop=True)
+	summarised_df = summarised_df.drop_duplicates()
+	summarised_df = summarised_df.reset_index(drop=True)
 	
-	return segments
+	return summarised_df
