@@ -148,7 +148,7 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 	
 	#Order the columns to be the idvars followed by the SLKs
 	for slk in slks:
-		x = 1
+		x = 0
 		summarised_df.insert(len(idvars) + x, slk, summarised_df.pop(slk))
 		x = x + 1
 	
