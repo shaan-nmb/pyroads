@@ -15,5 +15,5 @@ def test_imports():
 	from pyroads.mappings.rurality import rurality
 	from pyroads.mappings.surface import surf_id, surf_type
 
-	from pyroads.misc.custom_aggregations import first, last,most,q75,q90,q95
-	from pyroads.misc.deteriorate import deteriorate
+	from pyroads.modelling.custom_aggregations import first, last,most,q75,q90,q95
+	from pyroads.modelling.deteriorate import deteriorate

@@ -16,25 +16,26 @@ def stretch(
 		sort: Optional[list[str]] = None,
 		as_km: bool = True,
 		keep_ranges: bool = False
-	):
+	) -> 'pd.DataFrame':
 	"""
-	Replicates rows such that all observations have the same slk length
+	Replicates rows such that all observations have the same SLK length.
 
-	One of the following must be provided
+	One of the following combinations must be provided:
 
-		- `start` and `end`
-		- `start_true` and `end_true`
-		- `start`, `end`, `start_true` and `end_true`
+	* `start` and `end`
+	* `start_true` and `end_true`
+	* `start`, `end`, `start_true` and `end_true`
 
-	Args:
-		data: DataFrame
-		start (str): Column name of the `start SLK` of the segment in kilometres
-		end (str): Column name of the `end SLK` of the segment in kilometres
-		start_true (str): Column name of the `start true distance` of the segment in kilometres
-		end_true (str): Column name of the `end true distance` of the segment in kilometres
-		segment_size (int, 'GCD'): Number of meters or Greatest Common Divisor
-		sort (list[str]): Columns to sort the dataframe by
-		as_km (bool): If True, the output will be in kilometres
+	## Parameters: 
+
+		data (pd.DataFrame): Dataframe containing the data to be stretched.
+		start (str): Column name of the `start SLK` of the segment in kilometres.
+		end (str): Column name of the `end SLK` of the segment in kilometres.
+		start_true (str): Column name of the `start true distance` of the segment in kilometres.
+		end_true (str): Column name of the `end true distance` of the segment in kilometres.
+		segment_size (int, 'GCD'): Number of metres per segment or Greatest Common Divisor.
+		sort (list[str]): Columns to sort the dataframe by.
+		as_km (bool): Return output will be in kilometres.
 		keep_ranges (bool): Retains the slk_from and slk_to columns, but the values are repeated. Useful for regrouping into original intervals later.
 	"""
 	new_data = data.copy().reset_index(drop=True)  # Copy of the dataset

@@ -91,35 +91,36 @@ def lane_to_side(data, name = None, side_name = 'side'):
 def lane_to_col(
 	data: pd.DataFrame,
 	xsp: str,
+	dir_split: bool = False,
 	turn_pockets: bool = False,
-	idvars: list[str] = None,
+	id_vars: list[str] = None,
 	values: Optional[Union[str, list[str]]] = None,
+	all_lanes: bool = False,
 	):
 	
 	#Make a copy of the data frame
 	new_data = data.copy()
 
-	#Select only regular lanes
-	regular_lanes = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'R1', 'R2', 'R3', 'R4', 'R5']
-	if turn_pockets:
-		regular_lanes.append('TP')		
-	new_data = new_data.loc[new_data[xsp].isin(regular_lanes)]
+	if not all_lanes:
+		#Select only regular lanes
+		regular_lanes = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'R1', 'R2', 'R3', 'R4', 'R5']
+		if turn_pockets:
+			regular_lanes.append('TP')		
+		new_data = new_data.loc[new_data[xsp].isin(regular_lanes)]
 	
-	#Split into two columns. One for direction, and one for lane number.
-	new_data['DIRN'] = new_data[xsp].str[0]
-	new_data['LANE_NO'] = new_data[xsp].str[1]
+	if dir_split:
+		#Split into two columns. One for direction, and one for lane number.
+		new_data['DIRN'] = new_data[xsp].str[0]
+		new_data['LANE_NO'] = new_data[xsp].str[1:]
+		#Drop the XSP column and add 'DIRN' to the id_vars
+		new_data = new_data.drop(xsp, axis = 1)
+		id_vars.append('DIRN')
 	
-	#Drop the XSP column and add 'DIRN' to the idvars
-	new_data = new_data.drop(xsp, axis = 1)
-	
+	if id_vars is None:
+		id_vars = [col for col in new_data.columns if col not in values + ['LANE_NO', 'DIRN', xsp]]
 
-	if idvars is None:
-		idvars = [col for col in new_data.columns if col not in values + ['LANE_NO']]
-	else:
-		idvars.append('DIRN')
-		
 	#pivot
-	new_data = new_data.fillna(-1).pivot_table(index = idvars, columns = 'LANE_NO', values = values).reset_index()
+	new_data = new_data.fillna(-1).pivot_table(index = id_vars, columns = 'LANE_NO', values = values).reset_index()
 	new_data = new_data.replace(-1, np.nan)
 	new_data.columns = ["".join(x) for x in new_data.columns]
 	
@@ -128,7 +129,7 @@ def lane_to_col(
 def lane_to_row(
 	data,
 	dirn,
-	idvars,
+	id_vars,
 	start =  None,
 	end = None,
 	start_true =  None,
@@ -140,19 +141,19 @@ def lane_to_row(
 	slks = [col for col in [start, end, start_true, end_true] if bool(col)]
 
 	if prefixes is None:
-			lane_df_base = new_data[idvars + [dirn] + ['6','5','4','3','2','1','TP'] + slks].melt(id_vars = idvars + [dirn] + slks, value_vars = ['6','5','4','3','2','1','TP'], var_name = 'LANE_NO', ignore_index = True)	
+			lane_df_base = new_data[id_vars + [dirn] + ['6','5','4','3','2','1','TP'] + slks].melt(id_vars = id_vars + [dirn] + slks, value_vars = ['6','5','4','3','2','1','TP'], var_name = 'LANE_NO', ignore_index = True)	
 
 	if isinstance(prefixes, str):
 		cols = [col for col in new_data.columns if prefixes in col]
-		lane_df_base = new_data[cols + idvars + [dirn] + slks].melt(id_vars = idvars + [dirn], var_name = 'LANE_NO', value_name = prefixes[0], ignore_index = True)
+		lane_df_base = new_data[cols + id_vars + [dirn] + slks].melt(id_vars = id_vars + [dirn], var_name = 'LANE_NO', value_name = prefixes[0], ignore_index = True)
 
 	if isinstance(prefixes, list):
 		cols = [col for col in new_data.columns if prefixes[0] in col]
-		lane_df_base = new_data[cols + idvars + [dirn] + slks].melt(id_vars = idvars + [dirn] + slks, var_name = 'LANE_NO', value_name = prefixes[0], ignore_index = True)
-		lane_df_base = lane_df_base.drop([col for col in lane_df_base if col not in idvars + slks + ['LANE_NO', dirn, prefixes[0]]], axis = 1)
+		lane_df_base = new_data[cols + id_vars + [dirn] + slks].melt(id_vars = id_vars + [dirn] + slks, var_name = 'LANE_NO', value_name = prefixes[0], ignore_index = True)
+		lane_df_base = lane_df_base.drop([col for col in lane_df_base if col not in id_vars + slks + ['LANE_NO', dirn, prefixes[0]]], axis = 1)
 		for prefix in prefixes[1:]:
 			cols = [col for col in new_data.columns if prefix in col]
-			lane_df_temp = new_data[cols + idvars].melt(id_vars = idvars, var_name = 'LANE_NO', value_name = prefix, ignore_index = True)
+			lane_df_temp = new_data[cols + id_vars].melt(id_vars = id_vars, var_name = 'LANE_NO', value_name = prefix, ignore_index = True)
 			lane_df_temp = lane_df_temp[prefix]
 			lane_df_base = lane_df_base.join(lane_df_temp)
 
@@ -162,10 +163,10 @@ def lane_to_row(
 	lane_df = lane_df_base.drop(['LANE_NO', dirn], axis = 1) 
 	lane_df = lane_df.drop_duplicates().reset_index(drop = True)
 
-	#Order the columns to be the idvars followed by the SLKs
+	#Order the columns to be the id_vars followed by the SLKs
 	for slk in slks:
 		x = 1
-		lane_df.insert(len(idvars) + x, slk, lane_df.pop(slk))
+		lane_df.insert(len(id_vars) + x, slk, lane_df.pop(slk))
 		x = x + 1
 
 	return lane_df

@@ -2,7 +2,6 @@ from typing import Literal
 
 import pandas as pd
 
-
 def surf_type(data: pd.DataFrame, old_col: str, method: Literal["full", "short", "asphalt", "grouped", "group_id"] = "short") -> pd.DataFrame:
 	surf_id = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 	full = ["Asphalt Dense Graded", "Asphalt Intersection Mix", "Asphalt Open Graded", "Concrete", "Paving", "Primer Seal", "Rubberised Seal", "Single Seal", "Slurry Seal", "Two Coat Seal", "Asphalt Sotne Mastic", "Asphalt Open Graded on Dense Graded", "Asphalt Gap Graded Rubberised (GGAR)"]
@@ -53,5 +52,4 @@ def surf_id(data: pd.DataFrame, old_col: str, method="short") -> pd.DataFrame:
 		raise ValueError("ERROR surf_type(method): Please choose a method from ['full', 'short', 'asphalt', grouped'].")
 	
 	return data[old_col].map(surf_dict)
-
 

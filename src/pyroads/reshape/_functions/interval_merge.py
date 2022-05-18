@@ -4,22 +4,22 @@ from ._as_metres import as_metres
 import numpy as np
 
 
-def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_true=None, end_true=None, idvars_left=None, idvars_right=None, start_left=None, end_left=None, start_right=None, end_right=None, start_true_left=None, end_true_left=None, start_true_right=None, end_true_right=None, grouping='left', summarise=True, km=True, use_ranges=True, id = False):
+def interval_merge(left, right, id_vars=None, start=None, end=None, start_true=None, end_true=None, left_id_vars=None, right_id_vars=None, start_left=None, end_left=None, start_right=None, end_right=None, start_true_left=None, end_true_left=None, start_true_right=None, end_true_right=None, split_at='left', summarise=True, km=True, use_ranges=True, id = False):
 	
 	#Set all of the right and left variables depending on what parameters the user chose
-	if idvars is not None:
-		if idvars_left == None:
-			idvars_left = idvars
+	if id_vars is not None:
+		if left_id_vars == None:
+			left_id_vars = id_vars
 		else:
-			if isinstance(idvars_left, str) and len(idvars_left.split()) == 1:
-				idvars_left = [idvars_left]
-			idvars_left = idvars + idvars_left
-		if idvars_right == None:
-			idvars_right = idvars
+			if isinstance(left_id_vars, str) and len(left_id_vars.split()) == 1:
+				left_id_vars = [left_id_vars]
+			left_id_vars = id_vars + left_id_vars
+		if right_id_vars == None:
+			right_id_vars = id_vars
 		else:
-			if isinstance(idvars_right, str) and len(idvars_right.split()) == 1:
-				idvars_right = [idvars_right]
-			idvars_right = idvars + idvars_right
+			if isinstance(right_id_vars, str) and len(right_id_vars.split()) == 1:
+				right_id_vars = [right_id_vars]
+			right_id_vars = id_vars + right_id_vars
 	if start is not None:
 		start_left, start_right = start, start
 	if end is not None:
@@ -37,10 +37,10 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 	slk_interval_cols = starts_left + starts_right + ends_left + ends_right
 	
 	# Create copies as to not change the original data
-	left_copy = left_df.copy()
-	right_copy = right_df.copy()
+	left_copy = left.copy()
+	right_copy = right.copy()
 	#drop segment id columns if in datasets
-	if 'segment_id' in left_df.columns:
+	if 'segment_id' in left.columns:
 		left_copy = left_copy.drop('segment_id', axis=1)
 	if 'segment_id' in right_copy.columns:
 		right_copy = right_copy.drop('segment_id', axis=1)
@@ -55,25 +55,25 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 		summarise_cols = []		
 	## List of ID variables
 	### Find the number of ID variables to join on
-	id_len = min(len(idvars_left), len(idvars_right))  # max number of mutual IDs
+	id_len = min(len(left_id_vars), len(right_id_vars))  # max number of mutual IDs
 	### Rename the right ID Vars to be congruent with the left
-	id_dict = dict(zip(idvars_right[0:id_len], idvars_left[0:id_len]))
+	id_dict = dict(zip(right_id_vars[0:id_len], left_id_vars[0:id_len]))
 	right_copy = right_copy.rename(columns=id_dict)
-	idvars = idvars_left[0:id_len]
+	id_vars = left_id_vars[0:id_len]
 	## List of columns that will be grouped on
-	if isinstance(grouping, list):
-		grouping = grouping
-	elif grouping == True:
-		grouping = [col for col in [col for col in left_copy.columns]  + [col for col in right_copy.columns] if col not in slk_interval_cols + idvars + summarise_cols] + [var for var in idvars_left + idvars_right if var not in idvars]
-	elif grouping == 'left':
-		grouping = [col for col in left_copy.columns if col not in starts_left + ends_left + idvars_left + summarise_cols] + [var for var in idvars_left if var not in idvars]
-	elif grouping == 'right':
-		grouping = [col for col in right_copy.columns if col not in starts_right + ends_right + idvars + summarise_cols] + [var for var in idvars_left if var not in idvars]
+	if isinstance(split_at, list):
+		split_at = split_at
+	elif split_at == True:
+		split_at = [col for col in [col for col in left_copy.columns]  + [col for col in right_copy.columns] if col not in slk_interval_cols + id_vars + summarise_cols] + [var for var in left_id_vars + right_id_vars if var not in id_vars]
+	elif split_at == 'left':
+		split_at = [col for col in left_copy.columns if col not in starts_left + ends_left + left_id_vars + summarise_cols] + [var for var in left_id_vars if var not in id_vars]
+	elif split_at == 'right':
+		split_at = [col for col in right_copy.columns if col not in starts_right + ends_right + id_vars + summarise_cols] + [var for var in left_id_vars if var not in id_vars]
 	else:
-		grouping = []
+		split_at = []
 	
-	## Add the lists of idvars, summarise_cols, slk_intervals, and grouping together as the columns to keep
-	keep_cols = idvars+ slk_interval_cols + grouping + summarise_cols
+	## Add the lists of id_vars, summarise_cols, slk_intervals, and split_at together as the columns to keep
+	keep_cols = id_vars+ slk_interval_cols + split_at + summarise_cols
 
 	## Drop everything outside of the keep cols
 	right_copy = right_copy.loc[:, [col for col in right_copy.columns if col in keep_cols]]
@@ -120,9 +120,9 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 	left_stretched = stretch(left_copy, start=slk_dict[start_left], end=slk_dict[end_left], start_true=slk_dict[start_true_left], end_true=slk_dict[end_true_left], segment_size = gcd, as_km=False, keep_ranges=use_ranges)	
 	right_stretched = stretch(right_copy, start=slk_dict[start_right], end=slk_dict[end_right], start_true=slk_dict[start_true_right], end_true=slk_dict[end_true_right], segment_size = gcd, as_km=False)
 	
-	# Now that they have the same names, the mutual ID variables are the same as the parameter idvars_left to the maximum mutual length of the idvars
-	left_stretched = left_stretched.set_index(idvars + [col for col in ['SLK', 'true_SLK'] if col in left_stretched.columns])
-	right_stretched = right_stretched.set_index(idvars + [col for col in ['SLK', 'true_SLK'] if col in right_stretched.columns])
+	# Now that they have the same names, the mutual ID variables are the same as the parameter left_id_vars to the maximum mutual length of the id_vars
+	left_stretched = left_stretched.set_index(id_vars + [col for col in ['SLK', 'true_SLK'] if col in left_stretched.columns])
+	right_stretched = right_stretched.set_index(id_vars + [col for col in ['SLK', 'true_SLK'] if col in right_stretched.columns])
 	
 	# join by index
 	joined = left_stretched.join(right_stretched, how='left')
@@ -132,13 +132,13 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 		slks = list(set([i for i in list(slk_dict.values()) if i in joined.columns]))
 		joined.columns = ['org_' + col if col in slks else col for col in joined.columns]
 		org_slks = ['org_' + i for i in slks]
-		idvars = idvars + org_slks
+		id_vars = id_vars + org_slks
 		joined = joined.reset_index()
 	else:
 		slks = []
 		joined = joined[~joined.index.duplicated(keep='first')].reset_index()
 
-	summarised_df = get_segments(joined, true_SLK='true_SLK' if 'true_SLK' in joined.columns else None, SLK='SLK' if 'SLK' in joined.columns else None, idvars=idvars, grouping=grouping, as_km=True, summarise=summarise, id = id)
+	summarised_df = get_segments(joined, true_SLK='true_SLK' if 'true_SLK' in joined.columns else None, SLK='SLK' if 'SLK' in joined.columns else None, id_vars=id_vars, split_at=split_at, as_km=True, summarise=summarise, id = id)
 	
 	# Drop the duplicates of the SLK columns caused by `get_segments` if the original ranges are being used for the segments
 	if use_ranges:
@@ -146,10 +146,10 @@ def interval_merge(left_df, right_df, idvars=None, start=None, end=None, start_t
 		summarised_df.columns = [col[4:] if col[:4] == "org_" else col for col in summarised_df.columns]
 		summarised_df[slks] = summarised_df[slks] / 1000
 	
-	#Order the columns to be the idvars followed by the SLKs
+	#Order the columns to be the id_vars followed by the SLKs
 	for slk in slks:
 		x = 0
-		summarised_df.insert(len(idvars) + x, slk, summarised_df.pop(slk))
+		summarised_df.insert(len(id_vars) + x, slk, summarised_df.pop(slk))
 		x = x + 1
 	
 	summarised_df = summarised_df.drop_duplicates()
