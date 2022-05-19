@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 from .stretch import stretch
+from ._as_metres import as_metres
 
 def get_segments(
 	data: pd.DataFrame, 
@@ -94,7 +95,8 @@ def get_segments(
 
 	#If using point parameters, make sure they are in metres
 	if km and bool(SLK or true_SLK):
-		data.loc[:, [slk for slk in [true_SLK, SLK] if slk is not None]]*1000
+		for slk in [slk for slk in [true_SLK, SLK] if slk is not None]: 
+			data.loc[:, slk] = as_metres(data.loc[:, slk])
 	
 	# Stretch the dataframe into equal length segments if is not already
 	if not bool(SLK or true_SLK):
@@ -189,10 +191,10 @@ def get_segments(
 	for col in end_cols:
 		new_data[col] = new_data[col] + obs_length
 	
+	
+	# Turn into km by default
 	if as_km:
-		# Turn into km by default
-		for col in slks:
-			new_data[col] = new_data[col] / 1000
+		new_data.loc[:, slks] = new_data[slks]/1000
 	
 	if bool(summarise):
 		# Add the groupbys back to the columns
