@@ -107,6 +107,15 @@ def lane_to_col(
 		if turn_pockets:
 			regular_lanes.append('TP')		
 		new_data = new_data.loc[new_data[xsp].isin(regular_lanes)]
+	else: 
+		lanes = ['L1', 'L2', 'L3', 'L4', 'LL1', 'R1', 'R2', 'LR1', 'L', 'RR1', 'R', 'R3', 'LR2', 'LR3', 'RL1', 'RO', 'LO', 'RR2', 'RL2', 'ER', 'R4', 'R5', 'L5', 'L6', 'LL2', 'RR3', 'LL3']
+		new_data = new_data.loc[new_data[xsp].isin(lanes)]
+
+	if id_vars is None:
+		id_vars = [col for col in new_data.columns if col not in values + ['LANE_NO', xsp]]
+		
+	if isinstance(values, str):
+		values = [values]
 	
 	if dir_split:
 		#Split into two columns. One for direction, and one for lane number.
@@ -115,12 +124,12 @@ def lane_to_col(
 		#Drop the XSP column and add 'DIRN' to the id_vars
 		new_data = new_data.drop(xsp, axis = 1)
 		id_vars.append('DIRN')
-	
-	if id_vars is None:
-		id_vars = [col for col in new_data.columns if col not in values + ['LANE_NO', 'DIRN', xsp]]
 
 	#pivot
-	new_data = new_data.fillna(-1).pivot_table(index = id_vars, columns = 'LANE_NO', values = values).reset_index()
+	if dir_split:
+		new_data = new_data.fillna(-1).pivot_table(index = id_vars, columns = 'LANE_NO', values = values).reset_index()
+	else:
+		new_data = new_data.fillna(-1).pivot_table(index = id_vars, columns = xsp, values = values).reset_index()
 	new_data = new_data.replace(-1, np.nan)
 	new_data.columns = ["".join(x) for x in new_data.columns]
 	
@@ -128,40 +137,57 @@ def lane_to_col(
 
 def lane_to_row(
 	data,
-	dirn,
 	id_vars,
+	dirn = None,
+	SLK = None,
+	true_SLK = None,
 	start =  None,
 	end = None,
 	start_true =  None,
 	end_true = None,
 	prefixes = None,
+	dir_split = False,
+	all_lanes = False
 ):
 
 	new_data = data.copy()
-	slks = [col for col in [start, end, start_true, end_true] if bool(col)]
+	slks = [col for col in [start, end, start_true, end_true, SLK, true_SLK] if bool(col)]
+	
+	if bool(dirn):
+		dirn = [dirn]
+	else:
+		dirn = []
 
+	if dir_split:
+		lane_var = 'LANE_NO'
+	else:
+		lane_var = 'XSP'
+
+	if all_lanes:
+		lanes =  ['L1', 'L2', 'L3', 'L4', 'LL1', 'R1', 'R2', 'LR1', 'L', 'RR1', 'R', 'R3', 'LR2', 'LR3', 'RL1', 'RO', 'LO', 'RR2', 'RL2', 'ER', 'R4', 'R5', 'L5', 'L6', 'LL2', 'RR3', 'LL3']
 	if prefixes is None:
-			lane_df_base = new_data[id_vars + [dirn] + ['6','5','4','3','2','1','TP'] + slks].melt(id_vars = id_vars + [dirn] + slks, value_vars = ['6','5','4','3','2','1','TP'], var_name = 'LANE_NO', ignore_index = True)	
+			lane_df_base = new_data[id_vars + dirn + lanes + slks].melt(id_vars = id_vars + dirn + slks, value_vars = lanes, var_name = lane_var, ignore_index = True)	
 
 	if isinstance(prefixes, str):
 		cols = [col for col in new_data.columns if prefixes in col]
-		lane_df_base = new_data[cols + id_vars + [dirn] + slks].melt(id_vars = id_vars + [dirn], var_name = 'LANE_NO', value_name = prefixes[0], ignore_index = True)
+		lane_df_base = new_data[cols + id_vars + dirn + slks].melt(id_vars = id_vars + dirn, var_name = lane_var, value_name = prefixes[0], ignore_index = True)
 
 	if isinstance(prefixes, list):
 		cols = [col for col in new_data.columns if prefixes[0] in col]
-		lane_df_base = new_data[cols + id_vars + [dirn] + slks].melt(id_vars = id_vars + [dirn] + slks, var_name = 'LANE_NO', value_name = prefixes[0], ignore_index = True)
-		lane_df_base = lane_df_base.drop([col for col in lane_df_base if col not in id_vars + slks + ['LANE_NO', dirn, prefixes[0]]], axis = 1)
+		lane_df_base = new_data[cols + id_vars + [dirn] + slks].melt(id_vars = id_vars + [dirn] + slks, var_name = lane_var, value_name = prefixes[0], ignore_index = True)
+		lane_df_base = lane_df_base.drop([col for col in lane_df_base if col not in id_vars + slks + dirn + [lane_var + prefixes[0]]], axis = 1)
 		for prefix in prefixes[1:]:
 			cols = [col for col in new_data.columns if prefix in col]
-			lane_df_temp = new_data[cols + id_vars].melt(id_vars = id_vars, var_name = 'LANE_NO', value_name = prefix, ignore_index = True)
+			lane_df_temp = new_data[cols + id_vars].melt(id_vars = id_vars, var_name = lane_var, value_name = prefix, ignore_index = True)
 			lane_df_temp = lane_df_temp[prefix]
 			lane_df_base = lane_df_base.join(lane_df_temp)
 
-	lane_df_base['LANE_NO'] = lane_df_base.loc[:, 'LANE_NO'].str[-1] 
-	lane_df_base.insert(len(lane_df_base.columns) -1, 'XSP', lane_df_base[dirn].astype(str) + lane_df_base.LANE_NO.astype(str))
-	lane_df_base['XSP'] = np.where(lane_df_base['XSP'].str.contains('P'), 'TP', lane_df_base['XSP'])
-	lane_df = lane_df_base.drop(['LANE_NO', dirn], axis = 1) 
-	lane_df = lane_df.drop_duplicates().reset_index(drop = True)
+	if dir_split:
+		lane_df_base['LANE_NO'] = lane_df_base.loc[:, 'LANE_NO'].str[-1] 
+		lane_df_base.insert(len(lane_df_base.columns) -1, 'XSP', lane_df_base[dirn].astype(str) + lane_df_base.LANE_NO.astype(str))
+		lane_df_base['XSP'] = np.where(lane_df_base['XSP'].str.contains('P'), 'TP', lane_df_base['XSP'])
+		lane_df = lane_df_base.drop(['LANE_NO', dirn], axis = 1) 
+		lane_df = lane_df.drop_duplicates().reset_index(drop = True)
 
 	#Order the columns to be the id_vars followed by the SLKs
 	for slk in slks:
