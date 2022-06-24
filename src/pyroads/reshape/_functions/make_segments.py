@@ -84,8 +84,11 @@ def make_segments(
 	for start_, end_ in zip(starts, ends):
 		# Increment the start rows by the segment size
 		new_data[start_] = (new_data[start_] + new_data.groupby(level=0).cumcount() * max_segment)
-		new_data[end_] = np.where(((new_data[start_].shift(-1) - new_data[start_]) == max_segment) &  ((new_data[end].shift(-1) - new_data[start].shift(-1)) == max_segment), new_data[start_].shift(-1), new_data[end_])
+		new_data[end_] = np.where(((new_data[start_].shift(-1) - new_data[start_]) == max_segment), new_data[start_].shift(-1), new_data[end_])
 
+
+	#&  ((new_data[end_].shift(-1) - new_data[start_].shift(-1)) >= max_segment)
+	# Split the last segment if it is too short
 	# Check for minimum segment lengths
 	if split_ends:
 		for start_, end_ in zip(starts, ends):
@@ -98,6 +101,7 @@ def make_segments(
 			new_data[end_] = np.round(new_data[end_]/10) * 10
 			# Drop the boolean columns
 			new_data = new_data.drop(['start_end', 'too_short'], axis=1)
+
 	if km:
 		# Convert SLK variables back to km
 		for slk in slks:
