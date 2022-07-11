@@ -1,6 +1,6 @@
 from .get_segments import get_segments
 from .stretch import stretch
-from ._as_metres import as_metres
+from .as_metres import as_metres
 import numpy as np
 
 

@@ -3,7 +3,7 @@ from typing import Optional, Union, Literal
 import numpy as np
 import pandas as pd
 
-from ._as_metres import as_metres
+from .as_metres import as_metres
 
 
 def stretch(
@@ -38,6 +38,7 @@ def stretch(
 		as_km (bool): Return output will be in kilometres.
 		keep_ranges (bool): Retains the slk_from and slk_to columns, but the values are repeated. Useful for regrouping into original intervals later.
 	"""
+
 	new_data = data.copy().reset_index(drop=True)  # Copy of the dataset
 	new_data = new_data.dropna(thresh=2)  # drop any row that does not contain at least two non-missing values.
 	

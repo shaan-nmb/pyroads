@@ -1,9 +1,9 @@
-from typing import Optional, Union, Literal
+from typing import Optional
 
 import numpy as np
 import pandas as pd
 
-from pyroads.reshape._functions._as_metres import as_metres
+from .as_metres import as_metres
 
 def make_segments(
 	data: pd.DataFrame, 

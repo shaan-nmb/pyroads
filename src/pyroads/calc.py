@@ -1,3 +1,5 @@
+import numpy as np
+
 def most_common(x):
 	if len(x.mode()):
 		return x.mode()[0]
@@ -7,10 +9,8 @@ def most_common(x):
 def first(x):
 	return x.iloc[0]
 
-
 def last(x):
 	return x.iloc[-1]
-
 
 def q75(x):
 	return x.quantile(0.75)

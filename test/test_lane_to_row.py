@@ -27,7 +27,7 @@ def test_lane_to_row():
     result = lane_to_row(
         data       = input_data,
         dirn       = "dirn",
-        idvars     = ["road_no","carriageway"],
+        id_vars     = ["road_no","carriageway"],
         start      = "slk_from",
         end        = "slk_to",
         start_true = "true_from",

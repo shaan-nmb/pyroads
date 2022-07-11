@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from .stretch import stretch
-from ._as_metres import as_metres
+from .as_metres import as_metres
 
 def get_segments(
 	data: pd.DataFrame, 
@@ -38,9 +38,9 @@ def get_segments(
 	Parameters:
 	-----------
 	data (DataFrame):  Dataframe containing the data to be reshaped
-	id_vars:		   Column(s) to use as identifier variables for the linear reference points.
-	SLK:               Column name of the linear reference point.
-	true_SLK:          Column name of the linear reference point, in true distance.
+	id_vars (label or list of labels)  :		   Column(s) to use as identifier variables for the linear reference points.
+	SLK (label):               Column name of the linear reference point.
+	true_SLK (label):          Column name of the linear reference point, in true distance.
 	start (label):       Column name of the start of the segment.
 	end (label):         Column name of the end of the segment.
 	start_true (label):  Column name of the start of the segment, in true distance.
@@ -117,6 +117,10 @@ def get_segments(
 	# Treat `lane` as empty list if not declared
 	else:
 		lane = []
+	
+	#allow id_vars to have only one value
+	if isinstance(id_vars, str):
+		id_vars = [id_vars]
 	
 	# split_at - the variables for which to ensure are not broken between segments
 	if bool(split_at):
