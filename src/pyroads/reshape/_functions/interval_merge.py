@@ -4,7 +4,29 @@ from .as_metres import as_metres
 import numpy as np
 
 
-def interval_merge(left, right, id_vars=None, start=None, end=None, start_true=None, end_true=None, left_id_vars=None, right_id_vars=None, start_left=None, end_left=None, start_right=None, end_right=None, start_true_left=None, end_true_left=None, start_true_right=None, end_true_right=None, split_at='left', summarise=True, km=True, use_ranges=True, id = False):
+def interval_merge(
+	left, 
+	right, 
+	id_vars=None, 
+	start=None, 
+	end=None, 
+	start_true=None, 
+	end_true=None, 
+	left_id_vars=None, 
+	right_id_vars=None, 
+	start_left=None, 
+	end_left=None,
+	start_right=None, 
+	end_right=None, 
+	start_true_left=None, 
+	end_true_left=None, 
+	start_true_right=None, 
+	end_true_right=None, 
+	split_at='left', 
+	summarise=True, 
+	km=True, 
+	use_ranges=True, 
+	id = False):
 	
 	#Set all of the right and left variables depending on what parameters the user chose
 	if id_vars is not None:

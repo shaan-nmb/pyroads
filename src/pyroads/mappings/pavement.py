@@ -1,5 +1,4 @@
-
-map_pavement_type_name_to_id = {
+name_to_id = {
 	'Asphalt': 10,
 	'Clay': 5,
 	'Concrete': 6,
@@ -18,11 +17,10 @@ Map from pavement type name to pavement id
 
 Examples:
 	>>> df["pavement_type_id"] = df["pavement_type_name"].map(map_pavement_type_name_to_id)
-	>>> df["pavement_type_id"] = df["pavement_type_name"].apply(map_pavement_type_name_to_id.get, args=("Some Default Value"))
 """
 
 
-map_pavement_type_id_to_name = {
+id_to_name = {
 	10: 'Asphalt',
 	5: 'Clay',
 	6: 'Concrete',
@@ -40,6 +38,5 @@ map_pavement_type_id_to_name = {
 Map from pavement type name to pavement id
 
 Examples:
-	>>> df["pavement_type_name"] = df["pavement_type_id"].map(map_pavement_type_id_to_name)
-	>>> df["pavement_type_name"] = df["pavement_type_id"].apply(map_pavement_type_id_to_name.get, args=("Some Default Value"))
+	>>> df["pavement_type_name"] = df["pavement_type_id"].map(id_to_name)
 """

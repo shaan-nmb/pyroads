@@ -7,7 +7,7 @@ def test_imports():
 	"""
 	from pyroads.reshape import stretch, interval_merge, make_segments, get_segments
 	
-	from pyroads.mappings.cross_sectional_position import cway_to_side, hsd_to_side, lane_to_side, get_lanes
+	from pyroads.mappings.cross_sectional_position import cway_to_side, hsd_to_side, get_lanes
 	from pyroads.mappings.link_category import map_link_category_to_mabcd
 	from pyroads.mappings.pavement import map_pavement_type_name_to_id, map_pavement_type_id_to_name
 	from pyroads.mappings.region import map_region_name_to_number, map_region_number_to_region_name
@@ -15,5 +15,5 @@ def test_imports():
 	from pyroads.mappings.rurality import rurality
 	from pyroads.mappings.surface import surf_id, surf_type
 
-	from pyroads.modelling.custom_aggregations import first, last,most,q75,q90,q95
-	from pyroads.modelling.deteriorate import deteriorate
+	from pyroads.calc import first, last,most_common,q75,q90,q95
+	from pyroads.calc import deteriorate
