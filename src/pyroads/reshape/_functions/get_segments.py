@@ -1,4 +1,4 @@
-from typing import Optional, Union, Literal
+from typing import Optional, Union
 import numpy as np
 import pandas as pd
 
@@ -14,12 +14,9 @@ def get_segments(
 	end: Optional[str] = None, 
 	start_true: Optional[str] = None, 
 	end_true: Optional[str] = None, 
-	lane: Optional[str] = None, 
-	split_at: Union[str, list, bool] = False,
-	km: bool = True, 
+	split_at: Union[str, list, bool] = False, 
 	summarise: Union[dict, bool] = True, 
-	as_km: bool = True,  
-	id: bool = False
+	segment_size: Optional[int] = None,
 	) -> 'pd.DataFrame':
 
 	"""
@@ -45,10 +42,8 @@ def get_segments(
 	end (label):         Column name of the end of the segment.
 	start_true (label):  Column name of the start of the segment, in true distance.
 	end_true (label):    Column name of the end of the segment, in true distance.
-	lane (label):        Column name containing the lane information.
 	split_at (label, list of labels, or bool): Variable(s) other than the `id_vars` by which to split segments where there is discontinuity. If true, all non-reference point labels will be used. If false, splits are only done at discontinuities in `id_vars` and gaps/overlaps in the linear references.	
-	km (bool):         Whether of not the linear reference columns are measured in kilometres.
-
+	summarise (dict or bool):
 	Returns:
 		(DataFrame) new dataframe with containing all input columns segmented by and summarised on.
 	
@@ -79,11 +74,11 @@ def get_segments(
 	Get segments for `id_vars` `ROAD` and `CWAY` split at changes in `SURF_TYPE`.
 	>>> get_segments(df, id_vars = ['ROAD', 'CWAY'], start = 'START_SLK', end = 'END_SLK')
 	    ROAD  CWAY  START_SLK  END_SLK SURF_TYPE
-	0   H001   L      0.0       0.86    Seal
+	0   H001   L      0.0       0.86    Sealf
 	1   H001   S      12.2      12.3    Asphalt
 	2   H001   S      12.3      13      Seal
 
-	Split at changes in `SURF_TYPE`, and summarise `ROUGHNESS` and `CAT` by mean, and most common values respectively.
+	Split at changes in `SURF_TYPE`, and summarise `ROUGHNESS` and `CAT`, by mean and most common values respectively.
 	>>> from pyroads.calc import most_common
 	>>> reshape.get_segments(df, id_vars = ['ROAD', 'CWAY'], start = 'START_SLK', end = 'END_SLK', summarise= {'ROUGHNESS': 'mean', 'CAT': most_common}, id = True)	    
 	    ROAD  CWAY  START_SLK  END_SLK  SURF_TYPE  ROUGHNESS_mean  CAT_most_common
@@ -94,13 +89,18 @@ def get_segments(
 	new_data = data.copy()
 
 	#If using point parameters, make sure they are in metres
-	if km and bool(SLK or true_SLK):
+	if bool(SLK or true_SLK):
+		if not isinstance(segment_size, int):
+			return "`segment_size` must be provided when using pre-stretched data"
 		for slk in [slk for slk in [true_SLK, SLK] if slk is not None]: 
-			data.loc[:, slk] = as_metres(data.loc[:, slk])
-	
-	# Stretch the dataframe into equal length segments if is not already
-	if not bool(SLK or true_SLK):
-		new_data = stretch(data, start=start, end=end, start_true=start_true, end_true=end_true, as_km=False)
+			data.loc[:, slk] = as_metres(data.loc[:, slk])	
+	# Otherwise stretch into equal length segments
+	else:
+		starts = [col for col in [start, start_true] if col in new_data.columns]
+		ends = [col for col in [end, end_true] if col in new_data.columns]
+		lengths = as_metres(new_data[ends[0]]) - as_metres(new_data[starts[0]])
+		segment_size = np.gcd.reduce(lengths)
+		new_data = stretch(data, start=start, end=end, start_true=start_true, end_true=end_true, segment_size = segment_size, as_km=False)
 		if bool(start):
 			SLK = 'SLK'
 		if bool(start_true):
@@ -108,49 +108,40 @@ def get_segments(
 	
 	# Detect whether operating on SLK, True SLK, or both.
 	SLKs = [slk for slk in [true_SLK, SLK] if slk is not None]
-	
-	# Calculate the observation length
-	obs_length = new_data.loc[1, SLKs[0]] - new_data.loc[0, SLKs[0]]
-	
-	if bool(lane):
-		lane = [lane]
-	# Treat `lane` as empty list if not declared
-	else:
-		lane = []
-	
-	#allow id_vars to have only one value
+				
+	#allow id_vars and split_at to have only one value
+	if isinstance(split_at, str):
+		split_at = [split_at]
 	if isinstance(id_vars, str):
 		id_vars = [id_vars]
-	
+
+	#Remove all rows where the SLK and/or id variables are missing
+	new_data = new_data.dropna(subset = SLKs + id_vars)
+
 	# split_at - the variables for which to ensure are not broken between segments
 	if bool(split_at):
-		# If split_at is on, group by all columns other than the `id_vars` (ID variables)
+		# If split_at is True, group by all columns other than the `id_vars` (ID variables)
 		if split_at == True:
-			split_at = [col for col in new_data.columns if col not in id_vars + SLKs + lane]
-			if isinstance(summarise, dict):
-				split_at = [col for col in new_data.columns if col not in id_vars + SLKs + lane + list(summarise.keys())]
-			
-			# Treat split_at as list if a single label is given
-		if isinstance(split_at, str) and len(split_at.split()) == 1:
-			split_at = [split_at]
-		
+			split_at = [col for col in new_data.columns if col not in id_vars + SLKs]
+		if isinstance(summarise, dict):
+			split_at = split_at + list(summarise.keys())
 		# Treat all NAs the same
 		new_data.loc[:, split_at] = new_data.loc[:, split_at].fillna(-1)
-
 	# If split_at is False, the variable is an empty list
 	else:
 		split_at = []
 	
-	# Sort by all columns in split_at, then by true SLK, then by SLK, then lane if declared
-	new_data = new_data.sort_values(id_vars + lane + SLKs).reset_index(drop=True)
+	# Sort by all id_vars, then SLK, then split_at if declared
+	new_data = new_data.drop_duplicates(subset = id_vars + SLKs + split_at)
+	new_data = new_data.sort_values(id_vars + SLKs + split_at).reset_index(drop=True)
 	
 	#Check for Points of Equation
-	#If both SLK and true SLK are declared, create a column equal to the diference between the two abd check for changes in the variable
+	#If both SLK and true SLK are declared, create a column equal to the difference between the two and check for changes in the variable
 	if bool(true_SLK and SLK):
 		new_data['slk_diff'] = new_data[true_SLK] - new_data[SLK]
-		new_data.insert(0, "groupkey", new_data.groupby(split_at + id_vars + lane + ['slk_diff']).ngroup())
+		new_data.insert(0, "groupkey", new_data.groupby(split_at + id_vars + ['slk_diff']).ngroup())
 	else:
-		new_data.insert(0, "groupkey", new_data.groupby(split_at + id_vars + lane).ngroup())
+		new_data.insert(0, "groupkey", new_data.groupby(split_at + id_vars).ngroup())
 	
 	# Create lag and lead columns for SLK, true SLK, and the split_at key to check whether a new group has started
 	for var in SLKs:
@@ -162,8 +153,17 @@ def get_segments(
 	starts, ends = {}, {}
 	
 	for var in SLKs:
-		starts[var] = np.where((new_data['lag_' + var] == (new_data[var] - obs_length)) & (new_data['lag_groupkey'] == new_data['groupkey']), False, True)  # if the lagged SLKs are not one observation length less than the actual or the lagged group-key is different.
-		ends[var] = np.where((new_data['lead_' + var] == (new_data[var] + obs_length)) & (new_data['lead_groupkey'] == new_data['groupkey']), False, True)  # if the lead SLKs are not one observation length more than the actual or the lead group-key is different.
+		# if the lagged SLKs are not one observation length less than the actual or the lagged group-key is different.
+		starts[var] = np.where(
+			(new_data['lag_' + var] == (new_data[var] - segment_size)) & 
+			(new_data['lag_groupkey'] == new_data['groupkey']),
+			False, True)  
+		# if the lead SLKs are not one observation length more than the actual or the lead group-key is different.
+		ends[var] = np.where(
+			(new_data['lead_' + var] == (new_data[var] + segment_size)) & 
+			(new_data['lead_groupkey'] == new_data['groupkey']), 
+			False, True)
+			
 	new_data.loc[:, 'start_bool'] = np.prod([i for i in starts.values()], axis=0, dtype=bool)
 	new_data.loc[:, 'end_bool'] = np.prod([i for i in ends.values()], axis=0, dtype=bool)
 	
@@ -173,53 +173,40 @@ def get_segments(
 	new_data = new_data.drop(['start_bool', 'end_bool', 'groupkey'] + [col for col in new_data.columns if 'lag' in col or 'lead' in col], axis=1)
 	
 	# Summarise the data by `segment_id`
-
 	# By default, summarise the SLK into min and max columns, representing Start and End SLK respectively
 	if bool(summarise):
 		agg_dict = {SLK: [min, max] for SLK in SLKs}
+		# If an aggregation dictionary is provided to `summarise`, add the methods to the SLK method detailed in the previous step
+		if isinstance(summarise, dict):
+			agg_dict.update(summarise)
+	new_data = new_data.groupby(['segment_id'] + id_vars + split_at).agg(agg_dict)
+	new_data.columns = ["_".join(x) for x in new_data.columns]
+	new_data = new_data.rename(columns={'SLK_min': 'START_SLK', 'SLK_max': 'END_SLK', 'true_SLK_min': 'START_TRUE', 'true_SLK_max': 'END_TRUE'})
 	
-	# If an aggregation dictionary is provided to `summarise`, add the methods to the SLK method detailed in the previous step
-	if isinstance(summarise, dict):
-		agg_dict.update(summarise)
-		
-	if bool(summarise):
-		new_data = new_data.groupby(['segment_id'] + id_vars + lane + split_at).agg(agg_dict)
-		new_data.columns = ["_".join(x) for x in new_data.columns]
-		new_data = new_data.rename(columns={'SLK_min': 'START_SLK', 'SLK_max': 'END_SLK', 'true_SLK_min': 'START_TRUE', 'true_SLK_max': 'END_TRUE'})
 	start_cols = [col for col in ['START_SLK', 'START_TRUE'] if col in new_data.columns]
 	end_cols = [col for col in ['END_SLK', 'END_TRUE'] if col in new_data.columns]
-	
 	slks = start_cols + end_cols
 	
 	# Increment slk_ends by the observation length
 	for col in end_cols:
-		new_data[col] = new_data[col] + obs_length
+		new_data[col] = new_data[col] + segment_size
 	
-	
-	# Turn into km by default
-	if as_km:
-		new_data.loc[:, slks] = new_data[slks]/1000
+	# Turn into km
+	new_data.loc[:, slks] = new_data[slks]/1000
 	
 	if bool(summarise):
 		# Add the groupbys back to the columns
 		new_data = new_data.reset_index('segment_id', drop=True)
 		new_data = new_data.reset_index()
+	else:
+		new_data['segment_id'] = [i for i in range(len(new_data))]
 	
 	# After the aggregations are done, the missing data can go back to being NaN
 	new_data.loc[:, split_at] = new_data.loc[:, split_at].replace(-1, np.nan)
-	new_data = new_data.sort_values(id_vars + lane + start_cols)
-
-	#Order the columns to be the id_vars followed by the SLKs
-	for slk in slks:
-		x = 1
-		new_data.insert(len(id_vars) + x, slk, new_data.pop(slk))
-		x = x + 1
-
-	if id:
-		new_data['segment_id'] = [i for i in range(len(new_data))]
+	new_data = new_data.sort_values(id_vars + start_cols + end_cols)
 
 	#sort columns
-	new_data = new_data[id_vars + slks + lane + split_at + [col for col in new_data.columns if col not in id_vars + slks + lane + split_at]]
+	new_data = new_data[id_vars + slks + split_at + [col for col in new_data.columns if col not in id_vars + slks + split_at]]
 
 	new_data = new_data.reset_index(drop=True)
 	

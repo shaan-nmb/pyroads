@@ -24,9 +24,7 @@ def interval_merge(
 	end_true_right=None, 
 	split_at='left', 
 	summarise=True, 
-	km=True, 
-	use_ranges=True, 
-	id = False):
+	use_ranges=True):
 	
 	#Set all of the right and left variables depending on what parameters the user chose
 	if id_vars is not None:
@@ -103,11 +101,10 @@ def interval_merge(
 	
 	# Stretch both dataframes by a shared Greatest Common Divisor (GCD) of lengths
 
-	##If data is provided in km convert SLKs to integer metres for easier operations
-	if km:
-		left_metres = left_copy.loc[:, starts_left + ends_left].apply(as_metres)
-		right_metres = right_copy.loc[:, starts_right + ends_right].apply(as_metres)
-	
+	##convert SLKs to integer metres for easier operations
+	left_metres = left_copy.loc[:, starts_left + ends_left].apply(as_metres)
+	right_metres = right_copy.loc[:, starts_right + ends_right].apply(as_metres)
+
 	## Find the GCD
 	### Create a list of all the lengths	
 	# left
@@ -139,8 +136,8 @@ def interval_merge(
 	right_copy = right_copy.rename(columns=slk_dict)
 	
 	#Stretch
-	left_stretched = stretch(left_copy, start=slk_dict[start_left], end=slk_dict[end_left], start_true=slk_dict[start_true_left], end_true=slk_dict[end_true_left], segment_size = gcd, as_km=False, keep_ranges=use_ranges)	
-	right_stretched = stretch(right_copy, start=slk_dict[start_right], end=slk_dict[end_right], start_true=slk_dict[start_true_right], end_true=slk_dict[end_true_right], segment_size = gcd, as_km=False)
+	left_stretched = stretch(left_copy, start=slk_dict[start_left], end=slk_dict[end_left], start_true=slk_dict[start_true_left], end_true=slk_dict[end_true_left], segment_size = gcd, keep_ranges=use_ranges)	
+	right_stretched = stretch(right_copy, start=slk_dict[start_right], end=slk_dict[end_right], start_true=slk_dict[start_true_right], end_true=slk_dict[end_true_right], segment_size = gcd)
 	
 	# Now that they have the same names, the mutual ID variables are the same as the parameter left_id_vars to the maximum mutual length of the id_vars
 	left_stretched = left_stretched.set_index(id_vars + [col for col in ['SLK', 'true_SLK'] if col in left_stretched.columns])
@@ -160,7 +157,7 @@ def interval_merge(
 		slks = []
 		joined = joined[~joined.index.duplicated(keep='first')].reset_index()
 
-	summarised_df = get_segments(joined, true_SLK='true_SLK' if 'true_SLK' in joined.columns else None, SLK='SLK' if 'SLK' in joined.columns else None, id_vars=id_vars, split_at=split_at, as_km=True, summarise=summarise, id = id)
+	summarised_df = get_segments(joined, true_SLK='true_SLK' if 'true_SLK' in joined.columns else None, SLK='SLK' if 'SLK' in joined.columns else None, id_vars=id_vars, split_at=split_at, summarise=summarise)
 	
 	# Drop the duplicates of the SLK columns caused by `get_segments` if the original ranges are being used for the segments
 	if use_ranges:

@@ -57,7 +57,6 @@ def stretch(
 	new_data[SLKs] = new_data[SLKs].apply(as_metres)
 	
 	lengths = new_data[ends[0]] - new_data[starts[0]]
-	# gcd = gcd_list(lengths)
 	gcd = np.gcd.reduce(lengths)
 	
 	if segment_size == 'GCD':
