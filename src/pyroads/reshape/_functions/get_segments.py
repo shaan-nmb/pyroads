@@ -123,8 +123,8 @@ def get_segments(
 		# If split_at is True, group by all columns other than the `id_vars` (ID variables)
 		if split_at == True:
 			split_at = [col for col in new_data.columns if col not in id_vars + SLKs]
-		if isinstance(summarise, dict):
-			split_at = split_at + list(summarise.keys())
+			if isinstance(summarise, dict):
+				split_at = [col for col in new_data.columns if col not in id_vars + SLKs + list(summarise.keys())]
 		# Treat all NAs the same
 		new_data.loc[:, split_at] = new_data.loc[:, split_at].fillna(-1)
 	# If split_at is False, the variable is an empty list
