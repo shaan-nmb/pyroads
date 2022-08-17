@@ -157,7 +157,7 @@ def interval_merge(
 		slks = []
 		joined = joined[~joined.index.duplicated(keep='first')].reset_index()
 
-	summarised_df = get_segments(joined, true_SLK='true_SLK' if 'true_SLK' in joined.columns else None, SLK='SLK' if 'SLK' in joined.columns else None, id_vars=id_vars, split_at=split_at, summarise=summarise)
+	summarised_df = get_segments(joined, true_SLK='true_SLK' if 'true_SLK' in joined.columns else None, SLK='SLK' if 'SLK' in joined.columns else None, segment_size = int(gcd), id_vars=id_vars, split_at=split_at, summarise=summarise)
 	
 	# Drop the duplicates of the SLK columns caused by `get_segments` if the original ranges are being used for the segments
 	if use_ranges:
