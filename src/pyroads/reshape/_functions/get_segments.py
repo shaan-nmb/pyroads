@@ -92,8 +92,10 @@ def get_segments(
 	if bool(SLK or true_SLK):
 		if not isinstance(segment_size, int):
 			return "`segment_size` must be provided when using pre-stretched data"
-		for slk in [slk for slk in [true_SLK, SLK] if slk is not None]: 
-			data.loc[:, slk] = as_metres(data.loc[:, slk])	
+		if true_SLK is not None: 
+			new_data.loc[:, true_SLK] = as_metres(new_data.loc[:, true_SLK])
+		if SLK is not None:
+			new_data.loc[:, SLK] = as_metres(new_data.loc[:, SLK])	
 	# Otherwise stretch into equal length segments
 	else:
 		starts = [col for col in [start, start_true] if col in new_data.columns]
@@ -172,8 +174,8 @@ def get_segments(
 	
 	new_data = new_data.drop(['start_bool', 'end_bool', 'groupkey'] + [col for col in new_data.columns if 'lag' in col or 'lead' in col], axis=1)
 	
-	# Summarise the data by `segment_id`
-	# By default, summarise the SLK into min and max columns, representing Start and End SLK respectively
+	#Summarise the data by `segment_id`
+	#By default, summarise the SLK into min and max columns, representing Start and End SLK respectively
 	if bool(summarise):
 		agg_dict = {SLK: [min, max] for SLK in SLKs}
 		# If an aggregation dictionary is provided to `summarise`, add the methods to the SLK method detailed in the previous step

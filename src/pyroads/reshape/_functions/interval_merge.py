@@ -163,7 +163,6 @@ def interval_merge(
 	if use_ranges:
 		summarised_df = summarised_df.drop(slks, axis=1)
 		summarised_df.columns = [col[4:] if col[:4] == "org_" else col for col in summarised_df.columns]
-		summarised_df[slks] = summarised_df[slks] / 1000
 	
 	#Order the columns to be the id_vars followed by the SLKs
 	for slk in slks:
