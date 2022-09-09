@@ -92,10 +92,13 @@ def get_segments(
 	if bool(SLK or true_SLK):
 		if not isinstance(segment_size, int):
 			return "`segment_size` must be provided when using pre-stretched data"
-		if true_SLK is not None: 
-			new_data.loc[:, true_SLK] = as_metres(new_data.loc[:, true_SLK])
-		if SLK is not None:
-			new_data.loc[:, SLK] = as_metres(new_data.loc[:, SLK])	
+		else:
+			if true_SLK is not None:
+				if not (new_data[true_SLK].dtype != int or new_data[true_SLK].dtype != np.int64): 
+					new_data.loc[:, true_SLK] = as_metres(new_data.loc[:, true_SLK])
+			if SLK is not None:
+				if not (new_data[SLK].dtype != int or new_data[SLK].dtype != np.int64): 
+					new_data.loc[:, SLK] = as_metres(new_data.loc[:, SLK])	
 	# Otherwise stretch into equal length segments
 	else:
 		starts = [col for col in [start, start_true] if col in new_data.columns]
